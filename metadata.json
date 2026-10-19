@@ -1,0 +1,6 @@
+{
+  "name": "Sun Phanith Vatanak - Portfolio & Engineering Vault",
+  "description": "Production-ready developer portfolio and telemetry console for Sun Phanith Vatanak, featuring engineering deep dives, project showcase, and contact portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
