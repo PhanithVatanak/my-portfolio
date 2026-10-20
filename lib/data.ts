@@ -1,4 +1,4 @@
-import { Project, Experience, SkillCategory, WhatIDoItem, InterestItem, EducationItem, SpokenLanguage, Article, ContactMessage, TelemetryMetrics, DeveloperProfile, PortfolioData } from './types';
+import { Project, Experience, SkillCategory, WhatIDoItem, InterestItem, EducationItem, SpokenLanguage, Article, ContactMessage, TelemetryMetrics, DeveloperProfile, PortfolioData, TechRadarItem } from './types';
 
 export const developerProfile = {
   name: 'Sun Phanith Vatanak',
@@ -237,6 +237,120 @@ export const skillCategories: SkillCategory[] = [
   }
 ];
 
+export const initialTechRadar: TechRadarItem[] = [
+  // Backend & Enterprise Logic
+  {
+    id: 'tr-python',
+    name: 'Python',
+    category: 'Backend & Enterprise Logic',
+    proficiency: 'Core Daily Stack',
+    experienceYears: '4+ yrs',
+    tags: ['Backend APIs', 'Automation', 'Data Pipelines', 'Scripting']
+  },
+  {
+    id: 'tr-frappe',
+    name: 'Frappe Framework',
+    category: 'Backend & Enterprise Logic',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '3+ yrs',
+    tags: ['DocTypes', 'Workflows', 'ERPNext', 'HRMS Architecture', 'Permissions']
+  },
+  {
+    id: 'tr-rest-api',
+    name: 'RESTful API & Webhooks',
+    category: 'Backend & Enterprise Logic',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '4+ yrs',
+    tags: ['API Contracts', 'JSON Payloads', 'Authentication', 'Webhooks']
+  },
+
+  // Databases & Data Engineering
+  {
+    id: 'tr-mariadb',
+    name: 'MariaDB / MySQL',
+    category: 'Databases & Data Engineering',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '4+ yrs',
+    tags: ['Query Optimization', 'Indexing', 'Schema Design', 'Data Migrations']
+  },
+  {
+    id: 'tr-mssql',
+    name: 'Microsoft SQL Server',
+    category: 'Databases & Data Engineering',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '3+ yrs',
+    tags: ['T-SQL', 'Database Queries', 'Data Integrity', 'Systems Support']
+  },
+  {
+    id: 'tr-qdrant',
+    name: 'Qdrant Vector Database',
+    category: 'Databases & Data Engineering',
+    proficiency: 'Advanced Specialization',
+    experienceYears: '2+ yrs',
+    tags: ['Vector Embeddings', 'Semantic Search', 'AI CV Extraction', 'Similarity Search']
+  },
+
+  // Frontend & Modern Web
+  {
+    id: 'tr-javascript',
+    name: 'JavaScript (ES6+)',
+    category: 'Frontend & Modern Web',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '5+ yrs',
+    tags: ['Async/Await', 'DOM Manipulation', 'Event Loop', 'Component State']
+  },
+  {
+    id: 'tr-typescript',
+    name: 'TypeScript',
+    category: 'Frontend & Modern Web',
+    proficiency: 'Core Daily Stack',
+    experienceYears: '3+ yrs',
+    tags: ['Strict Mode', 'Interfaces', 'Generics', 'Type Safety']
+  },
+  {
+    id: 'tr-nextjs',
+    name: 'Next.js & React',
+    category: 'Frontend & Modern Web',
+    proficiency: 'Core Daily Stack',
+    experienceYears: '3+ yrs',
+    tags: ['App Router', 'Server Components', 'Responsive UI', 'Hooks']
+  },
+  {
+    id: 'tr-html-css',
+    name: 'HTML5, CSS3 & Tailwind',
+    category: 'Frontend & Modern Web',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '5+ yrs',
+    tags: ['Responsive Layouts', 'Flexbox & Grid', 'Tailwind CSS', 'Semantic HTML']
+  },
+
+  // Cloud, Notifications & Tooling
+  {
+    id: 'tr-fcm',
+    name: 'Firebase Cloud Messaging (FCM)',
+    category: 'Cloud, Notifications & Tooling',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '2+ yrs',
+    tags: ['Web Push Notifications', 'Real-time Messaging', 'Service Workers']
+  },
+  {
+    id: 'tr-git',
+    name: 'Git & GitHub Workflows',
+    category: 'Cloud, Notifications & Tooling',
+    proficiency: 'Core Daily Stack',
+    experienceYears: '4+ yrs',
+    tags: ['Version Control', 'Pull Requests', 'Branching', 'Code Review']
+  },
+  {
+    id: 'tr-linux-docker',
+    name: 'Linux & Docker Basics',
+    category: 'Cloud, Notifications & Tooling',
+    proficiency: 'Production Battle-Tested',
+    experienceYears: '3+ yrs',
+    tags: ['Linux Server Ops', 'Bash / Terminal', 'Containerization', 'Dev Environments']
+  }
+];
+
 export const personalInterests: InterestItem[] = [
   { id: 'coffee', label: 'Coffee', icon: 'coffee' },
   { id: 'music', label: 'Music', icon: 'headphones' },
@@ -337,57 +451,97 @@ export const spokenLanguages: SpokenLanguage[] = [
 
 export const initialProjects: Project[] = [
   {
-    id: 'proj-1',
-    title: 'E-commerce Dashboard',
-    slug: 'e-commerce-dashboard',
-    description: 'A comprehensive admin dashboard for managing inventory, orders, and customer analytics. Features real-time data updates and report generation.',
-    longDescription: 'An enterprise-grade administrative suite built with Next.js App Router and TypeScript. Orchestrates inventory sync across multi-location hubs, automated invoice dispatching, customer churn predictive signals, and instant revenue analytics via WebSockets.',
-    category: 'Web Apps',
-    tags: ['Next.js', 'TypeScript', 'Tailwind'],
-    liveUrl: 'https://ecommerce-preview.example.com',
-    githubUrl: 'https://github.com/example/ecommerce-dashboard',
-    iconName: 'shopping-cart',
-    stars: 524,
+    id: 'pro-001',
+    title: 'SPV ERPNext Multi-Tenant Orchestrator',
+    slug: 'pro-001',
+    description: 'High-availability multi-tenant Frappe Bench orchestration cluster managing automated tenant provisioning, custom MariaDB schema isolation, and background Celery queue workers.',
+    longDescription: 'An enterprise-grade multi-tenant orchestration control plane engineered on top of Frappe Framework and ERPNext. Features zero-downtime bench migrations, automated SSL certificate lifecycle dispatching with Let\'s Encrypt, dynamic tenant database routing across MariaDB Galera clusters, and real-time site health telemetry.',
+    parentCategory: 'Fullstack',
+    subCategory: 'Frappe Framework',
+    category: 'Full Stack',
+    tags: ['Frappe Framework', 'Python', 'MariaDB', 'Ubuntu 22.04', 'Redis', 'Bench CLI'],
+    liveUrl: 'https://erp.example.com',
+    githubUrl: 'https://github.com/example/erpnext-orchestrator',
+    iconName: 'terminal',
+    stars: 1240,
     featured: true,
     status: 'Live',
-    metrics: '99.98% Uptime • 120ms P95 API Latency',
+    metrics: '99.99% Uptime • 150+ Tenant Sites Isolated',
     architectureHighlights: [
-      'Server Components for streaming dashboard widgets without client bundle bloat',
-      'Optimistic mutations with React hooks for instant table edits',
-      'Dynamic export pipelines streaming CSV/PDF generation in background workers'
+      'DocType-driven multi-tenant database router isolating MariaDB Galera instances',
+      'Automated Frappe Bench site provisioning and schema migration worker pipeline',
+      'Unified Redis cluster handling cache invalidation and high-throughput background queue jobs'
     ],
-    previewGradient: 'from-sky-50 via-sky-100/60 to-blue-50'
+    previewGradient: 'from-sky-950 via-slate-900 to-slate-950',
+    codeSnippet: {
+      filename: 'tenant_provisioner.py',
+      language: 'Python',
+      code: `import frappe
+from frappe.utils import now_datetime
+
+def provision_tenant_site(site_domain, db_name, admin_password):
+    """Programmatically orchestrate isolated Frappe site with custom DocTypes"""
+    bench = frappe.init(site=site_domain)
+    frappe.connect()
+    
+    # Initialize workspace configuration
+    site_config = frappe.get_doc({
+        "doctype": "Tenant Workspace",
+        "domain": site_domain,
+        "database_name": db_name,
+        "status": "Active",
+        "provisioned_on": now_datetime()
+    })
+    site_config.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return {"status": "success", "site": site_domain}`
+    },
+    content: `### Executive Overview & Architecture
+The SPV ERPNext Multi-Tenant Orchestrator is an internal enterprise automation platform designed to deploy, monitor, and scale Frappe and ERPNext tenant instances across Ubuntu 22.04 LTS servers without manual CLI intervention.
+
+---
+
+### Core Engineering Innovations
+1. **Isolated MariaDB Tenancy**: Each customer receives an isolated database with strictly partitioned utf8mb4 schemas, ensuring compliance and zero data leakage.
+2. **Bench Microservice Orchestration**: Integrates directly with the \`bench\` CLI via a Python subprocess RPC worker pool, orchestrating commands like \`bench new-site\`, \`bench migrate\`, and \`bench backup\` asynchronously.
+3. **Automated Reverse Proxy & SSL**: Interacts with Nginx Lua scripts to dynamically route HTTP Host headers to internal gunicorn/werkzeug sockets without requiring Nginx reloads.`
   },
   {
-    id: 'proj-2',
-    title: 'TaskFlow App',
-    slug: 'taskflow-app',
-    description: 'A collaborative task management tool designed for remote teams. Includes drag-and-drop boards, user authentication, and activity logs.',
+    id: 'pro-002',
+    title: 'TaskFlow Collaborative Engine',
+    slug: 'pro-002',
+    description: 'A collaborative real-time task management and kanban engine designed for high-velocity engineering squads. Features CRDT board sync and offline persistence.',
     longDescription: 'Engineered for distributed high-velocity engineering squads. Features multi-column kanban boards, real-time presence indicators, customizable sprint retrospectives, and fine-grained role-based permission controls.',
+    parentCategory: 'Frontend',
+    subCategory: 'React Js',
     category: 'Web Apps',
-    tags: ['React', 'Redux', 'Firebase'],
+    tags: ['React Js', 'TypeScript', 'Tailwind CSS', 'Redux Toolkit'],
     liveUrl: 'https://taskflow-preview.example.com',
     githubUrl: 'https://github.com/example/taskflow-app',
     iconName: 'task-alt',
     stars: 840,
     featured: true,
     status: 'Live',
-    metrics: '40k+ Active Tasks Tracked • 4.9/5 Rating',
+    metrics: '40k+ Active Tasks Tracked • Sub-50ms Sync',
     architectureHighlights: [
       'Smooth 60FPS drag-and-drop physics engine with fluid touch controls',
       'Sub-50ms conflict-free replicated data types (CRDT) for multiplayer board sync',
       'Offline-first synchronization with persistent IndexedDB caching'
     ],
-    previewGradient: 'from-sky-50 via-sky-100/60 to-blue-50'
+    previewGradient: 'from-sky-50 via-sky-100/60 to-blue-50',
+    content: `### Real-Time Collaborative Architecture
+TaskFlow delivers a seamless multiplayer kanban experience similar to Figma and Linear. Built with React 19, TypeScript, and stateful WebSockets, team members can rearrange sprints, edit markdown task cards, and assign sprint story points simultaneously with zero merge conflicts.`
   },
   {
-    id: 'proj-3',
-    title: 'Crypto Tracker',
-    slug: 'crypto-tracker',
-    description: 'Real-time cryptocurrency price tracker with interactive charts and portfolio value calculation. Connects to public APIs for live market data.',
+    id: 'pro-003',
+    title: 'Crypto Telemetry & Market Analytics',
+    slug: 'pro-003',
+    description: 'Real-time cryptocurrency price tracker with GPU-accelerated charts and portfolio value calculation across 500+ decentralized exchange pairs.',
     longDescription: 'Financial telemetry dashboard delivering ultra-low-latency price streaming across 500+ decentralized exchange pairs. Features customizable technical indicator overlays (MACD, RSI, Bollinger Bands) and instant wallet balance aggregation.',
+    parentCategory: 'Frontend',
+    subCategory: 'Vue Js',
     category: 'Web Apps',
-    tags: ['Vue.js', 'D3.js', 'Node.js'],
+    tags: ['Vue Js', 'TypeScript', 'D3.js', 'WebSockets'],
     liveUrl: 'https://cryptotracker-preview.example.com',
     githubUrl: 'https://github.com/example/crypto-tracker',
     iconName: 'monitoring',
@@ -400,60 +554,72 @@ export const initialProjects: Project[] = [
       'GPU-accelerated D3 time-series rendering handling 100,000 continuous tick points',
       'Local-first encrypted portfolio storage with zero tracking'
     ],
-    previewGradient: 'from-sky-50 via-sky-100/60 to-blue-50'
+    previewGradient: 'from-sky-50 via-sky-100/60 to-blue-50',
+    content: `### Telemetry Ingestion Pipeline
+Processes high-frequency trading ticks from Binance, Coinbase, and Uniswap WebSocket streams, deduplicating data in Web Workers before updating reactive Vue 3 reactive refs.`
   },
   {
-    id: 'proj-4',
-    title: 'Portfolio V1',
-    slug: 'portfolio-v1',
-    description: 'My personal portfolio website designed to showcase my skills and projects. Built with performance and accessibility best practices.',
-    longDescription: 'The initial foundational release of the personal engineering vault, demonstrating zero-dependency vanilla architecture, flawless 100 Lighthouse audits, fluid CSS typography, and high-contrast accessible design systems.',
+    id: 'pro-004',
+    title: 'Enterprise Microservices Gateway',
+    slug: 'pro-004',
+    description: 'High-throughput asynchronous backend service gateway written in Python and FastAPI, handling authentication, token-bucket rate limiting, and database connection pooling.',
+    longDescription: 'An enterprise microservices gateway providing sub-15ms proxy routing, cryptographic JWT validation, automated Swagger schema validation, and PostgreSQL connection multiplexing.',
+    parentCategory: 'Backend',
+    subCategory: 'Python',
     category: 'Full Stack',
-    tags: ['HTML/CSS', 'JavaScript', 'Webpack'],
-    liveUrl: 'https://v1-portfolio.example.com',
-    githubUrl: 'https://github.com/example/portfolio-v1',
-    iconName: 'public',
-    stars: 310,
-    featured: true,
-    status: 'Archived',
-    metrics: '100/100 Lighthouse Performance & A11y',
-    architectureHighlights: [
-      'Handcrafted semantic markup with zero third-party framework overhead',
-      'Micro-animations calibrated for 120Hz ProMotion displays',
-      'Accessible focus trap navigation and ARIA landmarks throughout'
-    ],
-    previewGradient: 'from-sky-50 via-sky-100/60 to-blue-50'
-  },
-  {
-    id: 'proj-5',
-    title: 'Aether Engine',
-    slug: 'aether-engine',
-    description: 'Autonomous real-time UI stream compiler built with WebGPU & Rust. Compiles layout trees into direct GPU drawing primitives.',
-    longDescription: 'Experimental low-level graphics system parsing React-like tree structures directly into WebGPU compute pipelines. Achieves 10x throughput for data-dense telemetry dashboards compared to standard DOM reflows.',
-    category: 'Open Source',
-    tags: ['Rust', 'WebGPU', 'TypeScript', 'WASM'],
-    liveUrl: 'https://aether-preview.example.com',
-    githubUrl: 'https://github.com/example/aether-engine',
+    tags: ['Python', 'FastAPI', 'Postgresql', 'Docker & Containers', 'Redis'],
+    liveUrl: 'https://api-gateway.example.com',
+    githubUrl: 'https://github.com/example/python-microservices-gateway',
     iconName: 'terminal',
-    stars: 1489,
-    featured: false,
-    status: 'In Development',
-    metrics: '1,489 GitHub Stars • Production v2.4',
+    stars: 910,
+    featured: true,
+    status: 'Live',
+    metrics: '15,000 req/sec • Sub-15ms Latency',
     architectureHighlights: [
-      'Zero-allocation memory model compiled into WebAssembly bytecode',
-      'Direct-to-screen quad buffer rendering eliminating layout recalculation cascades',
-      'Dual-target cross-compilation for native desktop and modern browsers'
+      'Asynchronous ASGI request dispatching with uvloop event loop optimization',
+      'Distributed Redis sliding-window rate limiters with millisecond accuracy',
+      'Automated OpenAPI documentation generation with strict Pydantic models'
     ],
-    previewGradient: 'from-slate-900 via-sky-950 to-slate-900'
+    previewGradient: 'from-slate-900 via-sky-950 to-slate-900',
+    content: `### High-Throughput Python Architecture
+Written in modern Python 3.12 leveraging AsyncIO and \`uvloop\`. Routes and proxies mission-critical transactions across internal service clusters.`
   },
   {
-    id: 'proj-6',
+    id: 'pro-005',
+    title: 'Distributed Ledger & Vector Database Hub',
+    slug: 'pro-005',
+    description: 'Relational and semantic vector storage pipeline built on PostgreSQL and pgvector for ultra-fast document search and schema migrations.',
+    longDescription: 'High-speed relational storage tier configured with connection pooling (PgBouncer), read replica failover automation, and pgvector embeddings indexing for sub-100ms similarity lookups.',
+    parentCategory: 'Database',
+    subCategory: 'Postgresql',
+    category: 'AI & Tools',
+    tags: ['Postgresql', 'pgvector & Embeddings', 'Redis', 'Python'],
+    liveUrl: 'https://db-hub.example.com',
+    githubUrl: 'https://github.com/example/postgres-vector-hub',
+    iconName: 'cpu',
+    stars: 1040,
+    featured: true,
+    status: 'Live',
+    metrics: 'Sub-100ms Vector Recall • 99.99% Reliability',
+    architectureHighlights: [
+      'Hierarchical Navigable Small World (HNSW) indexing on 1536-dimensional vectors',
+      'Automated zero-downtime database migrations with forward-only schema rollouts',
+      'Hot stand-by streaming replication across three availability zones'
+    ],
+    previewGradient: 'from-slate-950 via-sky-950 to-slate-900',
+    content: `### Database Architecture & Indexing Strategy
+Leverages PostgreSQL 16 with \`pgvector\` extensions to index over 1.2 million embeddings vectors with HNSW search trees, supporting real-time cosine distance queries.`
+  },
+  {
+    id: 'pro-006',
     title: 'RAG Edge Vector Indexer',
-    slug: 'rag-edge-vector-indexer',
+    slug: 'pro-006',
     description: 'Distributed dense-sparse embeddings pipeline with sub-100ms retrieval latencies on Cloudflare Workers and PostgreSQL.',
     longDescription: 'High-speed semantic search orchestration layer that chunks, embeds, and reranks technical documentation on edge runtimes. Features token-budget-aware context compaction and hybrid lexical scoring.',
+    parentCategory: 'AI & Tools',
+    subCategory: 'LangChain / RAG',
     category: 'AI & Tools',
-    tags: ['Next.js', 'pgvector', 'LangChain', 'OpenAI'],
+    tags: ['LangChain / RAG', 'OpenAI / Gemini APIs', 'Postgresql', 'Next Js'],
     liveUrl: 'https://rag-edge.example.com',
     githubUrl: 'https://github.com/example/rag-edge',
     iconName: 'cpu',
@@ -466,16 +632,20 @@ export const initialProjects: Project[] = [
       'Contextual token compression reducing model context costs by 64%',
       'Serverless edge streaming with automatic fallback caching'
     ],
-    previewGradient: 'from-sky-900 via-indigo-950 to-slate-950'
+    previewGradient: 'from-sky-900 via-indigo-950 to-slate-950',
+    content: `### RAG Vector Orchestration
+Chunks complex documentation using semantic boundaries and executes parallel dense and sparse queries to produce synthesized answers with exact citations.`
   },
   {
-    id: 'proj-7',
+    id: 'pro-007',
     title: 'Neural Canvas WebGPU',
-    slug: 'neural-canvas-webgpu',
+    slug: 'pro-007',
     description: 'Hardware-accelerated generative particle canvas rendering 250,000 real-time compute shader particles directly via WebGPU.',
     longDescription: 'Interactive spatial simulation running custom WGSL compute pipelines on the GPU. Features zero-copy CPU-to-GPU memory transfer, reactive audio frequency buffers, and spatial particle physics at 120 FPS.',
+    parentCategory: 'Frontend',
+    subCategory: 'WebGPU / WebGL',
     category: 'Open Source',
-    tags: ['WebGPU', 'TypeScript', 'WGSL', 'React'],
+    tags: ['WebGPU / WebGL', 'TypeScript', 'React Js'],
     liveUrl: 'https://neural-canvas.example.com',
     githubUrl: 'https://github.com/example/neural-canvas-webgpu',
     iconName: 'cpu',
@@ -488,18 +658,22 @@ export const initialProjects: Project[] = [
       'Dual ping-pong storage buffers for collision avoidance',
       'Fallback detection with graceful WebGL2 rasterization adapter'
     ],
-    previewGradient: 'from-sky-900 via-indigo-950 to-slate-900'
+    previewGradient: 'from-sky-900 via-indigo-950 to-slate-900',
+    content: `### GPU Compute Shaders in the Browser
+Runs WGSL compute passes directly on physical GPU workgroups, moving all particle dynamics calculation away from the JavaScript main thread.`
   },
   {
-    id: 'proj-8',
-    title: 'Distributed Edge Gateway',
-    slug: 'distributed-edge-gateway',
-    description: 'Ultra-low latency reverse proxy and rate limiting gateway written in Rust with Next.js edge runtime adapters.',
-    longDescription: 'High-concurrency micro-gateway routing API requests across 35 edge regions with sub-5ms routing overhead. Provides dynamic token bucket rate limiting and automatic SSL certificate orchestration.',
-    category: 'AI & Tools',
-    tags: ['Rust', 'Next.js', 'TypeScript', 'Distributed Systems'],
-    liveUrl: 'https://edge-gateway.example.com',
-    githubUrl: 'https://github.com/example/distributed-edge-gateway',
+    id: 'pro-008',
+    title: 'DevOps Cloud Container Autopilot',
+    slug: 'pro-008',
+    description: 'Automated container cluster deployment pipeline for Ubuntu 22.04 LTS servers with Docker, Docker Compose, and automated reverse proxy management.',
+    longDescription: 'Production DevOps blueprint tool that automates secure server initialization, firewall policies, Redis cache clusters, and zero-downtime container updates.',
+    parentCategory: 'DevOps & Cloud',
+    subCategory: 'Docker & Containers',
+    category: 'Open Source',
+    tags: ['Docker & Containers', 'Ubuntu / Linux', 'CI/CD Pipelines', 'Nginx & Proxies'],
+    liveUrl: 'https://devops-autopilot.example.com',
+    githubUrl: 'https://github.com/example/devops-cloud-autopilot',
     iconName: 'terminal',
     stars: 1120,
     featured: false,
@@ -510,22 +684,128 @@ export const initialProjects: Project[] = [
       'Cryptographic token verification directly at the nearest CDN edge node',
       'Integrated distributed telemetry tracing with OpenTelemetry standard'
     ],
-    previewGradient: 'from-slate-900 via-sky-950 to-slate-900'
+    previewGradient: 'from-slate-900 via-sky-950 to-slate-900',
+    content: `### Infrastructure as Code Blueprint
+A standardized set of battle-tested Docker Compose templates, Bash provisioning scripts, and Nginx reverse proxy templates for production Ubuntu cloud droplets.`
   }
 ];
 
 export const initialArticles: Article[] = [
   {
-    id: 'art-1',
+    id: 'blog-001',
+    title: 'Frappe Framework 2026: Practical Onboarding Guideline & Production Quickstart',
+    slug: 'blog-001',
+    parentCategory: 'Fullstack',
+    subCategory: 'Frappe Framework',
+    category: 'Fullstack',
+    views: '16,800 views',
+    readRate: '96% read rate',
+    readTime: '10 min read',
+    publishedDate: 'Jan 15, 2026',
+    status: 'Published',
+    featured: true,
+    forumUrl: 'https://discuss.frappe.io',
+    forumBadge: 'Official Frappe Community Forum',
+    excerpt: 'The missing onboarding guideline for software engineers entering the Frappe & ERPNext ecosystem. Clear mental models on DocTypes, Bench CLI, Hooks, and production setup on Ubuntu 22.04 LTS.',
+    tags: ['Frappe Framework', 'Python', 'MariaDB', 'Ubuntu 22.04', 'ERPNext', 'Bench CLI'],
+    codeSnippet: {
+      filename: 'bench_quickstart.sh',
+      language: 'Bash',
+      code: `# 1. Update system & install foundational dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git python3-dev python3-setuptools python3-pip python3-venv virtualenv libmariadb-dev-compat libmariadb-dev redis-server curl
+
+# 2. Configure MariaDB for Frappe (UTF8MB4 requirement)
+sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf
+# [mysqld]
+# character-set-client-handshake = FALSE
+# character-set-server = utf8mb4
+# collation-server = utf8mb4_unicode_ci
+
+# 3. Install Frappe-Bench and Initialize Site
+pip3 install frappe-bench
+bench init --frappe-branch version-15 frappe-bench
+cd frappe-bench
+bench new-site development.local --mariadb-root-password your_root_password
+bench start`
+    },
+    content: `### Why This Guideline Exists
+
+Many engineers who start learning Frappe find the official documentation fragmented and overwhelming. This guide is crafted as an internal onboarding blueprint to help new team members understand what Frappe actually is, how its architecture functions, and how to set up a production-ready environment on Ubuntu 22.04 LTS without guesswork.
+
+---
+
+### 1. What is Frappe Framework?
+
+Frappe is a full-stack, batteries-included web framework written in **Python** (backend) and **JavaScript / Vue / Jinja** (frontend), backed by **MariaDB / PostgreSQL** and **Redis**.
+
+Unlike Django or FastAPI where you manually build admin dashboards, authentication tables, permission matrices, and REST APIs from scratch:
+
+- **DocTypes are Metadata**: In Frappe, creating a "DocType" creates the database table, the JSON schema, the REST API endpoints, and the full interactive UI form automatically.
+- **Role-Based Access Control (RBAC)**: Built-in granular user permissions at document and field levels.
+- **Background Jobs**: Integrated Celery/Redis queue workers for email, webhooks, and asynchronous processing.
+
+---
+
+### 2. Core Mental Model: The Frappe Triad
+
+To master Frappe, you only need to understand three core concepts:
+
+1. **DocType**: The blueprint (equivalent to Django Model + Serializer + Admin View).
+2. **Bench**: The CLI tool that orchestrates multiple apps, sites, Python virtualenvs, and background workers.
+3. **Hooks (hooks.py)**: The event-bus mechanism that lets you hook custom Python logic into document lifecycles (e.g., \`before_insert\`, \`validate\`, \`on_submit\`, and custom API endpoints).
+
+---
+
+### 3. Step-by-Step Installation on Ubuntu 22.04 LTS
+
+Follow the validated sequence below to get your bench running without version mismatch errors:
+
+1. **System Packages**: Install Python 3.10+, Git, curl, MariaDB server, and Redis server.
+2. **MariaDB Character Set**: Ensure MariaDB uses \`utf8mb4\` character set; otherwise, Frappe schema migrations will throw collation errors.
+3. **Node & Yarn**: Install Node.js v18 LTS and Yarn globally (\`npm install -g yarn\`).
+4. **Bench Initialization**: Initialize \`frappe-bench\` using \`bench init --frappe-branch version-15 frappe-bench\`.
+5. **Site Creation**: Create your first local tenant using \`bench new-site demo.local\`.
+
+\`\`\`bash:bench_quickstart.sh
+# 1. Update system & install foundational dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git python3-dev python3-setuptools python3-pip python3-venv virtualenv libmariadb-dev-compat libmariadb-dev redis-server curl
+
+# 2. Configure MariaDB for Frappe (UTF8MB4 requirement)
+sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf
+# [mysqld]
+# character-set-client-handshake = FALSE
+# character-set-server = utf8mb4
+# collation-server = utf8mb4_unicode_ci
+
+# 3. Install Frappe-Bench and Initialize Site
+pip3 install frappe-bench
+bench init --frappe-branch version-15 frappe-bench
+cd frappe-bench
+bench new-site development.local --mariadb-root-password your_root_password
+bench start
+\`\`\`
+
+---
+
+### 4. Community Discussion & Support
+
+Have questions or encountered an edge-case on Ubuntu? This guide is actively shared on the official **Frappe Community Forum**. Join the discussion, share your bench configurations, and get community feedback directly on discuss.frappe.io.`
+  },
+  {
+    id: 'blog-002',
     title: 'Architecting High-Concurrence Streaming UIs with React 19 & Next.js App Router',
-    slug: 'architecting-high-concurrence-streaming-uis',
-    category: 'Architecture',
+    slug: 'blog-002',
+    parentCategory: 'Frontend',
+    subCategory: 'React Js',
+    category: 'Frontend',
     views: '14,200 views',
     readRate: '92% read rate',
     readTime: '12 min read',
     publishedDate: 'Oct 28, 2024',
     status: 'Published',
-    featured: true,
+    featured: false,
     excerpt: 'An in-depth analysis of streaming hydration, edge rendering benchmarks, distributed cache invalidation, and advanced Suspense boundary patterns under high request concurrency.',
     tags: ['Architecture', 'Next.js', 'React 19', 'Edge Computing'],
     codeSnippet: {
@@ -560,10 +840,12 @@ export async function StreamFeed({
 By moving rendering work from mobile client devices to edge compute nodes, we observed a 74% reduction in Total Blocking Time (TBT) and near-instantaneous perceptual load times across all target regions.`
   },
   {
-    id: 'art-2',
+    id: 'blog-003',
     title: 'Mastering Turbopack vs Webpack in Large Scale Repos',
-    slug: 'mastering-turbopack-vs-webpack',
-    category: 'Build Tools',
+    slug: 'blog-003',
+    parentCategory: 'Frontend',
+    subCategory: 'Next Js',
+    category: 'Frontend',
     views: '8,420 views',
     readRate: '84% read rate',
     readTime: '8 min read',
@@ -574,10 +856,12 @@ By moving rendering work from mobile client devices to edge compute nodes, we ob
     content: `Migrating an enterprise monorepo with over 150,000 lines of TypeScript from traditional Webpack 5 to Rust-powered Turbopack provided concrete metrics on developer iteration loops. Cold compile dropped from 48.6 seconds down to 10.7 seconds, with hot module replacement (HMR) speeds consistently remaining under 80 milliseconds even as module graphs expanded.`
   },
   {
-    id: 'art-3',
+    id: 'blog-004',
     title: 'Benchmarking WebGL Shaders & Canvas 2D in React Apps',
-    slug: 'benchmarking-webgl-shaders-and-canvas-2d',
-    category: 'Performance',
+    slug: 'blog-004',
+    parentCategory: 'Frontend',
+    subCategory: 'WebGPU / WebGL',
+    category: 'Frontend',
     views: '9,150 views',
     readRate: '87% read rate',
     readTime: '10 min read',
@@ -588,10 +872,12 @@ By moving rendering work from mobile client devices to edge compute nodes, we ob
     content: `When rendering dense financial graphs and real-time scatter plots containing over 50,000 data elements, standard SVG and DOM reconciliation collapses below 15 FPS. By offloading coordinate math to customized GLSL vertex shaders inside an OffscreenCanvas worker thread, we achieved rock-solid 60 FPS performance without stealing any main thread execution cycles.`
   },
   {
-    id: 'art-4',
+    id: 'blog-005',
     title: 'Building Production RAG Pipelines with Vector Embeddings',
-    slug: 'building-production-rag-pipelines',
-    category: 'AI & LLMs',
+    slug: 'blog-005',
+    parentCategory: 'AI & Tools',
+    subCategory: 'Vector Search',
+    category: 'AI & Tools',
     views: '11,400 views',
     readRate: '89% read rate',
     readTime: '15 min read',
@@ -602,9 +888,11 @@ By moving rendering work from mobile client devices to edge compute nodes, we ob
     content: `A deep dive into building enterprise-grade Retrieval-Augmented Generation systems. We explore reciprocal rank fusion (RRF) between lexical BM25 algorithms and cosine similarity on 1536-dimensional vectors, demonstrating how contextual chunk reranking reduces hallucination frequency by 42%.`
   },
   {
-    id: 'art-5',
+    id: 'blog-006',
     title: 'Zero-Runtime CSS in 2025: Tailwind v4 vs StyleX',
-    slug: 'zero-runtime-css-tailwind-v4',
+    slug: 'blog-006',
+    parentCategory: 'Frontend',
+    subCategory: 'Tailwind CSS',
     category: 'Frontend',
     views: '6,100 views',
     readRate: '79% read rate',
@@ -616,10 +904,12 @@ By moving rendering work from mobile client devices to edge compute nodes, we ob
     content: `CSS-in-JS runtimes like styled-components and emotion carried heavy computational costs: runtime style tag injections, stylesheet deduplication on every render, and massive JavaScript bundle overhead. We compare Tailwind CSS v4's Rust-powered engine with Meta's compile-time StyleX.`
   },
   {
-    id: 'art-6',
+    id: 'blog-007',
     title: 'Micro-Frontends vs Monoliths: A Practical Retrospective',
-    slug: 'micro-frontends-vs-monoliths',
-    category: 'Architecture',
+    slug: 'blog-007',
+    parentCategory: 'Fullstack',
+    subCategory: 'Next.js Fullstack',
+    category: 'Fullstack',
     views: '7,890 views',
     readRate: '81% read rate',
     readTime: '11 min read',
@@ -630,10 +920,12 @@ By moving rendering work from mobile client devices to edge compute nodes, we ob
     content: `While Module Federation and independent micro-frontend deployments promised autonomy, they introduced severe operational complexity: version drift, duplicated runtime dependencies, fragile shared contracts, and fractured user experiences. Here is our detailed retrospective on consolidating 8 discrete frontends into an integrated Turborepo monorepo.`
   },
   {
-    id: 'art-7',
+    id: 'blog-008',
     title: 'Optimizing LCP & INP Core Web Vitals to Sub-100ms',
-    slug: 'optimizing-lcp-and-inp-core-web-vitals',
-    category: 'Performance',
+    slug: 'blog-008',
+    parentCategory: 'Backend',
+    subCategory: 'Python',
+    category: 'Backend',
     views: '12,300 views',
     readRate: '94% read rate',
     readTime: '7 min read',
@@ -695,6 +987,7 @@ class PortfolioDatabase {
   private education: EducationItem[] = [...educationList];
   private languages: SpokenLanguage[] = [...spokenLanguages];
   private skills: SkillCategory[] = [...skillCategories];
+  private techRadar: TechRadarItem[] = [...initialTechRadar];
   private interests: InterestItem[] = [...personalInterests];
   private articles: Article[] = [...initialArticles];
   private projects: Project[] = [...initialProjects];
@@ -713,6 +1006,7 @@ class PortfolioDatabase {
       education: this.education,
       languages: this.languages,
       skills: this.skills,
+      techRadar: this.techRadar,
       interests: this.interests,
       articles: this.articles,
       telemetry: this.telemetry,
@@ -727,6 +1021,7 @@ class PortfolioDatabase {
     if (partial.education) this.education = [...partial.education];
     if (partial.languages) this.languages = [...partial.languages];
     if (partial.skills) this.skills = [...partial.skills];
+    if (partial.techRadar) this.techRadar = [...partial.techRadar];
     if (partial.interests) this.interests = [...partial.interests];
     if (partial.articles) this.articles = [...partial.articles];
     if (partial.telemetry) this.telemetry = { ...this.telemetry, ...partial.telemetry };
@@ -741,6 +1036,7 @@ class PortfolioDatabase {
     this.education = [...educationList];
     this.languages = [...spokenLanguages];
     this.skills = [...skillCategories];
+    this.techRadar = [...initialTechRadar];
     this.interests = [...personalInterests];
     this.articles = [...initialArticles];
     this.telemetry = { ...telemetryMetrics };

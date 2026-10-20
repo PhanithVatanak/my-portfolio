@@ -61,8 +61,11 @@ import {
   AlertTriangle,
   Maximize2,
   Minimize2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Clipboard,
-  CheckCheck
+  CheckCheck,
+  Cpu
 } from 'lucide-react';
 import { usePortfolioData } from './PortfolioDataContext';
 import { useToast } from './ToastContext';
@@ -77,8 +80,13 @@ import {
   ContactMessage,
   WhatIDoItem,
   DeveloperProfile,
-  SocialLinkItem
+  SocialLinkItem,
+  TechRadarItem
 } from '@/lib/types';
+import { initialTechRadar } from '@/lib/data';
+import { BlogDetailsView } from './BlogDetailsView';
+import { ProjectDetailsView } from './ProjectDetailsView';
+import { PARENT_CATEGORIES, getSubcategoriesForParent } from '@/lib/categories';
 
 // Helper component to render icon badge for social platforms
 function PlatformIconBadge({ icon, className = 'w-4 h-4' }: { icon?: string; className?: string }) {
@@ -123,6 +131,7 @@ export function AdminDashboard() {
     updateExperiences,
     updateEducation,
     updateLanguages,
+    updateTechRadar,
     updateArticles,
     resetToDefaults,
     importJson,
@@ -145,6 +154,24 @@ export function AdminDashboard() {
 
   const [activeTab, setActiveTab] = useState<AdminTab>('home');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('spv_admin_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('spv_admin_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Strict Administrator Authentication System
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
@@ -368,44 +395,87 @@ export function AdminDashboard() {
     await updateWhatIDo(nextList);
   };
 
-  // Projects Modal / Edit State (kept intact as requested)
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [isNewProject, setIsNewProject] = useState(false);
+  // Projects CMS & Details View State
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isEditingProject, setIsEditingProject] = useState<boolean>(false);
   const [projectSearch, setProjectSearch] = useState('');
   const [projectCategoryFilter, setProjectCategoryFilter] = useState('All');
+  const [projectParentFilter, setProjectParentFilter] = useState('All');
+  const [projectSubFilter, setProjectSubFilter] = useState('All');
 
-  const handleOpenAddProject = () => {
+  // Helper ID generators: pro-001, blog-001 format
+  const generateNextProjectId = (projects: Project[]) => {
+    const nums = projects
+      .map((p) => {
+        const m = p.id.match(/^pro-(\d+)$/i);
+        return m ? parseInt(m[1], 10) : 0;
+      })
+      .filter((n) => n > 0);
+    const nextNum = (nums.length > 0 ? Math.max(...nums) : projects.length) + 1;
+    return `pro-${String(nextNum).padStart(3, '0')}`;
+  };
+
+  const generateNextArticleId = (articles: Article[]) => {
+    const nums = articles
+      .map((a) => {
+        const m = a.id.match(/^blog-(\d+)$/i);
+        return m ? parseInt(m[1], 10) : 0;
+      })
+      .filter((n) => n > 0);
+    const nextNum = (nums.length > 0 ? Math.max(...nums) : articles.length) + 1;
+    return `blog-${String(nextNum).padStart(3, '0')}`;
+  };
+
+  const handleCreateNewProject = () => {
+    if (!requireAdmin('Creating project')) return;
+    const newId = generateNextProjectId(data.projects);
     const newProj: Project = {
-      id: 'proj-' + Date.now(),
-      title: 'New Innovation App',
-      slug: 'new-innovation-app',
+      id: newId,
+      title: 'New Innovation System',
+      slug: newId,
       description: 'High-performance interactive web application built with modern standards.',
       longDescription: 'Comprehensive full-stack system incorporating distributed edge rendering and low-latency state synchronization.',
-      category: 'Web Apps',
-      tags: ['Next.js 15', 'TypeScript', 'Tailwind CSS'],
+      category: 'Full Stack',
+      parentCategory: 'Fullstack',
+      subCategory: 'Frappe Framework',
+      tags: ['Next.js 15', 'TypeScript', 'Tailwind CSS', 'Frappe Framework'],
+      architectureHighlights: [
+        'Modular micro-service architecture',
+        'Automated schema generation and real-time APIs',
+        'Sub-second query response with optimized database indexing'
+      ],
       liveUrl: 'https://example.com',
-      githubUrl: 'https://github.com',
+      githubUrl: 'https://github.com/PhanithVatanak',
       iconName: 'terminal',
       status: 'Live',
       stars: 42,
+      codeSnippet: {
+        filename: 'quickstart.sh',
+        language: 'Bash',
+        code: `# 1. Clone & install dependencies\ngit clone https://github.com/PhanithVatanak/project.git\ncd project\nnpm install\n\n# 2. Run dev server\nnpm run dev`
+      }
     };
-    setEditingProject(newProj);
-    setIsNewProject(true);
+    const nextProjects = [newProj, ...data.projects];
+    updateProjects(nextProjects);
+    setSelectedProjectId(newProj.id);
+    setIsEditingProject(true);
+    showToast(`New project ${newId} initialized. Live editor opened!`, 'info');
   };
 
-  const handleSaveProjectModal = async () => {
+  const handleSaveProject = async (updated: Project) => {
     if (!requireAdmin('Saving project')) return;
-    if (!editingProject) return;
+    const existingIndex = data.projects.findIndex((p) => p.id === updated.id);
     let nextProjects: Project[];
-    if (isNewProject) {
-      nextProjects = [editingProject, ...data.projects];
+    if (existingIndex >= 0) {
+      nextProjects = [...data.projects];
+      nextProjects[existingIndex] = updated;
     } else {
-      nextProjects = data.projects.map((p) => (p.id === editingProject.id ? editingProject : p));
+      nextProjects = [updated, ...data.projects];
     }
     const ok = await updateProjects(nextProjects);
     if (ok) {
-      showToast(`Project "${editingProject.title}" saved & synced!`, 'success');
-      setEditingProject(null);
+      setIsEditingProject(false);
+      showToast(`Project ${updated.id} saved & synced to Turso database!`, 'success');
     } else {
       showToast('Failed to save project.', 'error');
     }
@@ -413,10 +483,16 @@ export function AdminDashboard() {
 
   const handleDeleteProject = async (id: string) => {
     if (!requireAdmin('Deleting project')) return;
-    const nextProjects = data.projects.filter((p) => p.id !== id);
-    const ok = await updateProjects(nextProjects);
-    if (ok) {
-      showToast('Project deleted from vault.', 'info');
+    if (window.confirm(`Delete project ${id} permanently?`)) {
+      const nextProjects = data.projects.filter((p) => p.id !== id);
+      const ok = await updateProjects(nextProjects);
+      if (ok) {
+        if (selectedProjectId === id) {
+          setSelectedProjectId(null);
+          setIsEditingProject(false);
+        }
+        showToast(`Project ${id} deleted from vault.`, 'info');
+      }
     }
   };
 
@@ -574,6 +650,80 @@ export function AdminDashboard() {
     showToast('Education & Languages synced to live JSON!', 'success');
   };
 
+  // Tech Radar / Battle-Tested Tooling State (Editable & Synced to Turso Relational DB)
+  const [techRadarOverrides, setTechRadarOverrides] = useState<TechRadarItem[] | null>(null);
+  const techRadarListState = techRadarOverrides ?? (data.techRadar && data.techRadar.length > 0 ? data.techRadar : initialTechRadar);
+  const [editingTech, setEditingTech] = useState<TechRadarItem | null>(null);
+  const [isNewTech, setIsNewTech] = useState(false);
+
+  const handleOpenAddTech = () => {
+    const newTech: TechRadarItem = {
+      id: 'tr-' + Date.now(),
+      name: '',
+      category: 'Backend & Enterprise Logic',
+      proficiency: 'Production Battle-Tested',
+      experienceYears: '3+ yrs',
+      tags: [],
+    };
+    setEditingTech(newTech);
+    setIsNewTech(true);
+  };
+
+  const handleOpenEditTech = (tech: TechRadarItem) => {
+    setEditingTech({ ...tech, tags: [...(tech.tags || [])] });
+    setIsNewTech(false);
+  };
+
+  const handleSaveTechModal = async () => {
+    if (!requireAdmin('Saving technology')) return;
+    if (!editingTech || !editingTech.name.trim()) {
+      showToast('Technology name is required.', 'error');
+      return;
+    }
+    let nextList: TechRadarItem[];
+    if (isNewTech) {
+      nextList = [...techRadarListState, editingTech];
+    } else {
+      nextList = techRadarListState.map((t) => (t.id === editingTech.id ? editingTech : t));
+    }
+    setTechRadarOverrides(nextList);
+    if (updateTechRadar) {
+      await updateTechRadar(nextList);
+    }
+    showToast(`Technology "${editingTech.name}" saved & synced!`, 'success');
+    setEditingTech(null);
+  };
+
+  const handleDeleteTech = async (id: string) => {
+    if (!requireAdmin('Deleting technology')) return;
+    const nextList = techRadarListState.filter((t) => t.id !== id);
+    setTechRadarOverrides(nextList);
+    if (updateTechRadar) {
+      await updateTechRadar(nextList);
+    }
+    showToast('Technology removed from tech stack.', 'info');
+  };
+
+  const handleMoveTech = (index: number, dir: 'up' | 'down') => {
+    if (!requireAdmin('Reordering technologies')) return;
+    const target = dir === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= techRadarListState.length) return;
+    const nextList = [...techRadarListState];
+    const temp = nextList[index];
+    nextList[index] = nextList[target];
+    nextList[target] = temp;
+    setTechRadarOverrides(nextList);
+  };
+
+  const handleSyncTechRadar = async () => {
+    if (!requireAdmin('Syncing tech stack')) return;
+    if (updateTechRadar) {
+      await updateTechRadar(techRadarListState);
+    }
+    setTechRadarOverrides(null);
+    showToast('Technical Stack & Tooling synced to Turso database!', 'success');
+  };
+
   // Article / Blog CMS state
   const [articleTitle, setArticleTitle] = useState('');
   const [articleCategory, setArticleCategory] = useState<Article['category']>('Architecture');
@@ -582,6 +732,60 @@ export function AdminDashboard() {
   const [articleTags, setArticleTags] = useState('Next.js 15, TypeScript');
   const [articleStatus, setArticleStatus] = useState<Article['status']>('Published');
   const [articleSearch, setArticleSearch] = useState('');
+  const [articleParentFilter, setArticleParentFilter] = useState('All');
+  const [articleSubFilter, setArticleSubFilter] = useState('All');
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [isEditingArticle, setIsEditingArticle] = useState<boolean>(false);
+
+  const handleCreateNewArticle = () => {
+    if (!requireAdmin('Creating article')) return;
+    const newId = generateNextArticleId(data.articles);
+    const newArt: Article = {
+      id: newId,
+      title: 'Frappe Framework 2026: Team Onboarding Guideline',
+      slug: newId,
+      category: 'Frappe Framework',
+      parentCategory: 'Fullstack',
+      subCategory: 'Frappe Framework',
+      views: '1.2k views',
+      readRate: '96% read rate',
+      readTime: '8 min read',
+      publishedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      status: 'Published',
+      excerpt: 'Comprehensive onboarding blueprint for software engineers entering the Frappe & ERPNext ecosystem.',
+      tags: ['Frappe Framework', 'Python', 'MariaDB', 'Ubuntu 22.04', 'Bench CLI'],
+      forumUrl: 'https://discuss.frappe.io',
+      forumBadge: 'Official Frappe Community Forum',
+      codeSnippet: {
+        filename: 'bench_quickstart.sh',
+        language: 'Bash',
+        code: `# 1. Update OS & install foundational packages\nsudo apt update && sudo apt upgrade -y\nsudo apt install -y git python3-dev python3-pip redis-server\n\n# 2. Start bench\nbench start`
+      },
+      content: `### Why This Guideline Exists\n\nMany engineers who start learning Frappe find the official documentation fragmented and overwhelming. This guide is crafted as an internal onboarding blueprint to help new team members understand what Frappe actually is, how its architecture functions, and how to set up a production-ready environment on Ubuntu 22.04 LTS without guesswork.\n\n---\n\n### 1. What is Frappe Framework?\n\nFrappe is a full-stack, batteries-included web framework written in **Python** (backend) and **JavaScript / Vue / Jinja** (frontend), backed by **MariaDB / PostgreSQL** and **Redis**.\n\n---\n\n### 2. Core Mental Model: The Frappe Triad\n\n1. **DocType**: Model + Schema + API + UI Form\n2. **Bench**: The CLI orchestrator\n3. **Hooks**: Lifecycle event handlers\n\n---\n\n### 3. Step-by-Step Installation on Ubuntu 22.04 LTS\n\nFollow the verified sequence in the terminal above.`
+    };
+    const next = [newArt, ...data.articles];
+    updateArticles(next);
+    setSelectedArticleId(newArt.id);
+    setIsEditingArticle(true);
+    showToast(`New guideline ${newId} initialized. Live editor opened.`, 'info');
+  };
+
+  const handleSaveArticle = async (updated: Article) => {
+    if (!requireAdmin('Updating article')) return;
+    const existingIndex = data.articles.findIndex((a) => a.id === updated.id);
+    let next: Article[];
+    if (existingIndex >= 0) {
+      next = [...data.articles];
+      next[existingIndex] = updated;
+    } else {
+      next = [updated, ...data.articles];
+    }
+    const ok = await updateArticles(next);
+    if (ok) {
+      setIsEditingArticle(false);
+      showToast(`Article ${updated.id} saved & updated in Turso database!`, 'success');
+    }
+  };
 
   const handlePublishArticle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -590,11 +794,14 @@ export function AdminDashboard() {
       showToast('Title and content are required.', 'error');
       return;
     }
+    const newId = generateNextArticleId(data.articles);
     const newArt: Article = {
-      id: 'art-' + Date.now(),
+      id: newId,
       title: articleTitle.trim(),
       slug: articleTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       category: articleCategory,
+      parentCategory: 'Fullstack',
+      subCategory: 'Frappe Framework',
       views: '1.2k views',
       readRate: '92% read rate',
       readTime: '5 min read',
@@ -686,6 +893,7 @@ export function AdminDashboard() {
     () => [
       { id: 'auto', label: '⚡ Smart Auto-Detect', sectionName: 'Entire / Auto' },
       { id: 'skills', label: '🎯 Skills', sectionName: 'Skills' },
+      { id: 'techRadar', label: '⚡ Tech Radar / Tooling', sectionName: 'Tech Radar' },
       { id: 'whatIDo', label: '💼 What I Do', sectionName: 'What I Do' },
       { id: 'projects', label: '🚀 Projects', sectionName: 'Projects' },
       { id: 'experiences', label: '📜 Experiences', sectionName: 'Experiences' },
@@ -897,6 +1105,13 @@ export function AdminDashboard() {
         null,
         2
       ),
+      techRadar: JSON.stringify(
+        {
+          techRadar: initialTechRadar,
+        },
+        null,
+        2
+      ),
     }),
     []
   );
@@ -1098,7 +1313,7 @@ export function AdminDashboard() {
 
   // Prevent background page from scrolling when JSON modal or editor modals are open
   useEffect(() => {
-    const isModalActive = jsonModalOpen || Boolean(editingEdu) || Boolean(editingExp);
+    const isModalActive = jsonModalOpen || Boolean(editingEdu) || Boolean(editingExp) || Boolean(editingTech);
     if (!isModalActive) return;
 
     const originalOverflow = document.body.style.overflow;
@@ -1114,7 +1329,7 @@ export function AdminDashboard() {
       document.body.style.overflow = originalOverflow;
       document.body.style.paddingRight = originalPaddingRight;
     };
-  }, [jsonModalOpen, editingEdu, editingExp]);
+  }, [jsonModalOpen, editingEdu, editingExp, editingTech]);
 
   // Handle smooth mouse-wheel horizontal scrolling over the Target tabs and block background scroll bleed
   useEffect(() => {
@@ -1164,32 +1379,51 @@ export function AdminDashboard() {
     }
   };
 
-  // Filtered views
+  // Filtered views with 2-tier parent & subcategory support
   const filteredProjects = useMemo(() => {
     const q = projectSearch.toLowerCase().trim();
     let projs = data.projects;
+    if (projectParentFilter !== 'All') {
+      projs = projs.filter((p) => (p.parentCategory || 'Fullstack') === projectParentFilter);
+    }
+    if (projectSubFilter !== 'All') {
+      projs = projs.filter((p) => (p.subCategory || '') === projectSubFilter);
+    }
     if (projectCategoryFilter !== 'All') {
       projs = projs.filter((p) => p.category === projectCategoryFilter);
     }
     if (!q) return projs;
     return projs.filter(
       (p) =>
+        p.id.toLowerCase().includes(q) ||
         p.title.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q) ||
+        (p.parentCategory && p.parentCategory.toLowerCase().includes(q)) ||
+        (p.subCategory && p.subCategory.toLowerCase().includes(q)) ||
         p.tags.some((t) => t.toLowerCase().includes(q))
     );
-  }, [data.projects, projectSearch, projectCategoryFilter]);
+  }, [data.projects, projectSearch, projectCategoryFilter, projectParentFilter, projectSubFilter]);
 
   const filteredArticles = useMemo(() => {
     const q = articleSearch.toLowerCase().trim();
-    if (!q) return data.articles;
-    return data.articles.filter(
+    let arts = data.articles;
+    if (articleParentFilter !== 'All') {
+      arts = arts.filter((a) => (a.parentCategory || 'Fullstack') === articleParentFilter);
+    }
+    if (articleSubFilter !== 'All') {
+      arts = arts.filter((a) => (a.subCategory || '') === articleSubFilter);
+    }
+    if (!q) return arts;
+    return arts.filter(
       (a) =>
+        a.id.toLowerCase().includes(q) ||
         a.title.toLowerCase().includes(q) ||
+        (a.parentCategory && a.parentCategory.toLowerCase().includes(q)) ||
+        (a.subCategory && a.subCategory.toLowerCase().includes(q)) ||
         a.category.toLowerCase().includes(q) ||
         a.tags.some((t) => t.toLowerCase().includes(q))
     );
-  }, [data.articles, articleSearch]);
+  }, [data.articles, articleSearch, articleParentFilter, articleSubFilter]);
 
   const filteredInquiries = useMemo(() => {
     const q = inquirySearch.toLowerCase().trim();
@@ -1211,19 +1445,19 @@ export function AdminDashboard() {
     () => [
       { id: 'home' as AdminTab, label: 'Home Page', subtitle: 'Hero, Stats & Services', icon: Home, badge: null, previewHref: '/#hero' },
       { id: 'about' as AdminTab, label: 'About Page', subtitle: 'Bio, Roles, Edu & Languages', icon: User, badge: null, previewHref: '/#about' },
-      { id: 'projects' as AdminTab, label: 'Project Page', subtitle: 'Portfolio Showcase Vault', icon: FolderGit2, badge: data.projects.length.toString(), previewHref: '/#projects' },
-      { id: 'contact' as AdminTab, label: 'Contact Page', subtitle: 'Channels, Socials & Inbox', icon: Mail, badge: unreadInquiriesCount > 0 ? `${unreadInquiriesCount} new` : null, previewHref: '/#contact' },
+      { id: 'projects' as AdminTab, label: 'Project Page', subtitle: 'Portfolio Showcase Vault', icon: FolderGit2, badge: data.projects.length.toString(), previewHref: '/projects' },
+      { id: 'articles' as AdminTab, label: 'Blog Page', subtitle: 'Articles & Field Notes CMS', icon: FileCode, badge: data.articles.length.toString(), previewHref: '/blog' },
+      { id: 'contact' as AdminTab, label: 'Contact Page', subtitle: 'Channels, Socials & Inbox', icon: Mail, badge: unreadInquiriesCount > 0 ? `${unreadInquiriesCount} new` : null, previewHref: '/contact' },
     ],
-    [data.projects.length, unreadInquiriesCount]
+    [data.projects.length, data.articles.length, unreadInquiriesCount]
   );
 
   const systemNavItems = useMemo(
     () => [
-      { id: 'articles' as AdminTab, label: 'Blog & Articles', subtitle: 'Markdown Publication CMS', icon: FileCode, badge: data.articles.length.toString(), previewHref: '/#blog' },
       { id: 'overview' as AdminTab, label: 'Command Hub', subtitle: 'Telemetry & Quick KPIs', icon: Activity, badge: null, previewHref: '/' },
       { id: 'json' as AdminTab, label: 'Live JSON Vault', subtitle: 'State Inspector & Import', icon: Database, badge: 'Live', previewHref: null },
     ],
-    [data.articles.length]
+    []
   );
 
   const currentTabMeta = useMemo(() => {
@@ -1432,6 +1666,30 @@ export function AdminDashboard() {
               )}
             </button>
 
+            {/* Toggle Full Width / Collapse Sidebar */}
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shadow-xs ${
+                sidebarCollapsed
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-sky-600/20'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+              }`}
+              title={sidebarCollapsed ? 'Show Sidebar & Constrain Width' : 'Collapse Sidebar & Expand Dashboard Full Width'}
+            >
+              {sidebarCollapsed ? (
+                <>
+                  <PanelLeftOpen className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Show Sidebar</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeftClose className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  <span className="hidden sm:inline">Full Width</span>
+                </>
+              )}
+            </button>
+
             {/* View Live Portfolio */}
             <Link
               href="/"
@@ -1472,20 +1730,33 @@ export function AdminDashboard() {
       </header>
 
       {/* MAIN TWO-COLUMN DASHBOARD LAYOUT */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className={`w-full ${sidebarCollapsed ? 'max-w-none px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} py-6 transition-all duration-300`}>
         <div className="flex flex-col lg:flex-row items-start gap-8">
           {/* SIDEBAR NAVIGATION (Desktop & Mobile Drawer) */}
           <aside
             className={`w-full lg:w-72 shrink-0 ${
-              mobileSidebarOpen ? 'block' : 'hidden lg:block'
+              sidebarCollapsed
+                ? (mobileSidebarOpen ? 'block' : 'hidden')
+                : (mobileSidebarOpen ? 'block' : 'hidden lg:block')
             } transition-all`}
           >
             <div className="sticky top-24 space-y-6 bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
               {/* SECTION: MODULAR PAGE EDITORS */}
               <div className="space-y-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 px-3">
-                  Individual Page Editors
-                </span>
+                <div className="flex items-center justify-between px-3">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    Individual Page Editors
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleSidebar}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Collapse sidebar (Expand to full width)"
+                  >
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-medium hidden xl:inline">Collapse</span>
+                  </button>
+                </div>
 
                 <div className="space-y-1 pt-1">
                   {pageNavItems.map((item) => {
@@ -1639,6 +1910,49 @@ export function AdminDashboard() {
 
           {/* RIGHT WORKSPACE: ACTIVE MODULAR PAGE EDITOR */}
           <main className="flex-1 min-w-0 w-full space-y-6 pb-24">
+            {/* FULL WIDTH MODE: QUICK TOP BAR & HORIZONTAL TAB NAVIGATOR */}
+            {sidebarCollapsed && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleSidebar}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-semibold text-xs border border-sky-200/60 dark:border-sky-500/20 transition-colors cursor-pointer"
+                    title="Restore sidebar navigation"
+                  >
+                    <PanelLeftOpen className="w-3.5 h-3.5" />
+                    <span>Show Sidebar</span>
+                  </button>
+                  <span className="text-[11px] font-mono text-slate-400 hidden md:inline">
+                    Canvas: 100% Full Width
+                  </span>
+                </div>
+
+                {/* Quick horizontal tab switcher in full width */}
+                <div className="flex items-center gap-1 overflow-x-auto py-0.5 max-w-full">
+                  {pageNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActiveTab(item.id)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all inline-flex items-center gap-1.5 cursor-pointer ${
+                          isActive
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* WORKSPACE HEADER: Breadcrumbs & Page Action Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 md:p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm">
               <div>
@@ -2334,155 +2648,432 @@ export function AdminDashboard() {
                     ))}
                   </div>
                 </div>
+
+                {/* Technical Stack & Battle-Tested Tooling (Tech Radar - Relational Turso DB) */}
+                <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
+                        <Cpu className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                        <span>Technical Stack & Battle-Tested Tooling (Tech Radar)</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Manage production technologies, tenure, proficiency, and tags stored in Turso relational tables (with categories, tags, and junction tables).
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={handleOpenAddTech}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Technology</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSyncTechRadar}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Sync Tech Stack</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tech Radar Cards Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {techRadarListState.map((tech, idx) => (
+                      <div
+                        key={tech.id || idx}
+                        className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col justify-between gap-3 hover:border-sky-300 dark:hover:border-slate-700 transition-all"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                              {tech.category}
+                            </span>
+                            <span className="text-xs font-mono font-bold text-sky-600 dark:text-sky-400">
+                              {tech.experienceYears}
+                            </span>
+                          </div>
+
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                            {tech.name}
+                          </h3>
+
+                          <div className="flex items-center gap-1.5 mt-1 mb-2">
+                            <span className="size-1.5 rounded-full bg-emerald-500"></span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                              {tech.proficiency}
+                            </span>
+                          </div>
+
+                          {tech.tags && tech.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
+                              {tech.tags.map((tag, tIdx) => (
+                                <span
+                                  key={tIdx}
+                                  className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 text-[10px] font-mono border border-sky-100 dark:border-sky-500/20"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveTech(idx, 'up')}
+                            disabled={idx === 0}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
+                            title="Move Up"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveTech(idx, 'down')}
+                            disabled={idx === techRadarListState.length - 1}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
+                            title="Move Down"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditTech(tech)}
+                            className="p-1.5 text-slate-400 hover:text-sky-600 transition-colors cursor-pointer"
+                            title="Edit Technology"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTech(tech.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            title="Delete Technology"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
             {/* ========================================================= */}
-            {/* 3. PROJECT PAGE EDITOR (Showcase, Inventory, Modal CRUD)  */}
+            {/* 3. PROJECT PAGE EDITOR (List View & Details View CMS)     */}
             {/* ========================================================= */}
             {activeTab === 'projects' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 md:p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex flex-wrap items-center gap-3 flex-1">
-                    <div className="relative flex-1 min-w-[200px] max-w-md">
+              selectedProjectId ? (
+                (() => {
+                  const currentProject = data.projects.find((p) => p.id === selectedProjectId);
+                  if (!currentProject) {
+                    return (
+                      <div className="p-8 text-center space-y-4 bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200 dark:border-slate-800">
+                        <p className="text-sm text-slate-500">Project not found.</p>
+                        <button
+                          onClick={() => { setSelectedProjectId(null); setIsEditingProject(false); }}
+                          className="px-4 py-2 rounded-full text-xs font-semibold bg-sky-600 text-white cursor-pointer"
+                        >
+                          Return to List View
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Sub-Header inside Opened Project */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedProjectId(null); setIsEditingProject(false); }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Back to List View</span>
+                          </button>
+
+                          <div className="hidden sm:flex items-center gap-2 text-xs">
+                            <span className="font-mono text-slate-400">ID:</span>
+                            <span className="font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-500/20">
+                              {currentProject.id}
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span className="text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
+                              {currentProject.title}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {currentProject.id && (
+                            <Link
+                              href={`/projects/${currentProject.id}`}
+                              target="_blank"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                              title="Open public page in new tab"
+                            >
+                              <span>Live Page</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          )}
+
+                          {!isEditingProject ? (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingProject(true)}
+                              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 shadow-md shadow-sky-600/25 transition-all cursor-pointer"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>Edit Project</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingProject(false)}
+                              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 transition-colors cursor-pointer"
+                            >
+                              Exit Edit Mode
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Project Display Canvas: View or Edit Mode */}
+                      <ProjectDetailsView
+                        project={currentProject}
+                        mode={isEditingProject ? 'edit' : 'view'}
+                        onSave={handleSaveProject}
+                        onCancel={() => setIsEditingProject(false)}
+                      />
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* Top Bar with "+ Create Project" button */}
+                  <div className="p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
+                          Projects & Production Systems
+                        </h2>
+                        <span className="px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 text-xs font-semibold border border-sky-200/80 dark:border-sky-500/20">
+                          {filteredProjects.length} Systems
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Click on any <span className="font-semibold text-sky-600 dark:text-sky-400">Project ID</span> or title below to open it. Once opened, click the <strong>Edit</strong> button to edit and save.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCreateNewProject}
+                      className="px-4 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>+ Create Project</span>
+                    </button>
+                  </div>
+
+                  {/* 2-Tier Filter Bar: Search + Parent Category + Subcategory */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search projects by title, category, or tags..."
+                        placeholder="Search by ID (e.g. pro-001), title, framework, or tags..."
                         value={projectSearch}
                         onChange={(e) => setProjectSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                       />
                     </div>
 
                     <select
-                      value={projectCategoryFilter}
-                      onChange={(e) => setProjectCategoryFilter(e.target.value)}
-                      className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 cursor-pointer"
+                      value={projectParentFilter}
+                      onChange={(e) => {
+                        setProjectParentFilter(e.target.value);
+                        setProjectSubFilter('All');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 cursor-pointer"
                     >
-                      <option value="All">All Categories</option>
-                      <option value="Web Apps">Web Apps</option>
-                      <option value="Open Source">Open Source</option>
-                      <option value="AI & Tools">AI & Tools</option>
-                      <option value="Full Stack">Full Stack</option>
+                      <option value="All">All Parent Categories</option>
+                      {PARENT_CATEGORIES.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={projectSubFilter}
+                      onChange={(e) => setProjectSubFilter(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 cursor-pointer"
+                    >
+                      <option value="All">All Subcategories</option>
+                      {(projectParentFilter !== 'All'
+                        ? getSubcategoriesForParent(projectParentFilter)
+                        : PARENT_CATEGORIES.flatMap((p) => p.subcategories)
+                      ).map((sub) => (
+                        <option key={sub} value={sub}>
+                          {sub}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                  <button
-                    onClick={handleOpenAddProject}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer shrink-0"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add New Project</span>
-                  </button>
-                </div>
-
-                {/* Projects Inventory Table */}
-                <div className="rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs min-w-[700px]">
-                      <thead className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-                        <tr>
-                          <th className="py-3.5 px-5">Title & Path Slug</th>
-                          <th className="py-3.5 px-4">Category</th>
-                          <th className="py-3.5 px-4">Tech Stack</th>
-                          <th className="py-3.5 px-4">Status</th>
-                          <th className="py-3.5 px-4">Links</th>
-                          <th className="py-3.5 px-5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200">
-                        {filteredProjects.map((p) => (
-                          <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                            <td className="py-3.5 px-5">
-                              <span className="font-bold text-slate-900 dark:text-white block text-sm">{p.title}</span>
-                              <span className="font-mono text-[10px] text-slate-400">/{p.slug}</span>
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-[11px] text-sky-600 dark:text-sky-400 font-semibold">
-                              {p.category}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex flex-wrap gap-1 max-w-[260px]">
-                                {p.tags.slice(0, 3).map((t, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-600 dark:text-slate-300 font-mono"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
-                                {p.tags.length > 3 && (
-                                  <span className="text-[10px] text-slate-400 font-mono">+{p.tags.length - 3}</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span
-                                className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                                  p.status === 'Live'
-                                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20'
-                                    : p.status === 'In Development'
-                                    ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/20'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                                }`}
-                              >
-                                {p.status}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-2">
-                                {p.liveUrl && (
-                                  <a
-                                    href={p.liveUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-slate-400 hover:text-sky-600"
-                                    title="Live URL"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </a>
-                                )}
-                                {p.githubUrl && (
-                                  <a
-                                    href={p.githubUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-slate-400 hover:text-slate-800 dark:hover:text-white"
-                                    title="GitHub URL"
-                                  >
-                                    <Github className="w-3.5 h-3.5" />
-                                  </a>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-5 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  onClick={() => {
-                                    setEditingProject({ ...p });
-                                    setIsNewProject(false);
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-sky-600 transition-colors cursor-pointer"
-                                  title="Edit Project"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteProject(p.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                                  title="Delete Project"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
+                  {/* Projects List View Table */}
+                  <div className="rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs min-w-[750px]">
+                        <thead className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                          <tr>
+                            <th className="py-3.5 px-4">Project ID</th>
+                            <th className="py-3.5 px-4">Title & Details</th>
+                            <th className="py-3.5 px-3">Parent Category</th>
+                            <th className="py-3.5 px-3">Sub-Framework</th>
+                            <th className="py-3.5 px-3">Status</th>
+                            <th className="py-3.5 px-3">Links</th>
+                            <th className="py-3.5 px-4 text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200">
+                          {filteredProjects.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-slate-400">
+                                No projects matched your filter criteria.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredProjects.map((p) => (
+                              <tr key={p.id} className="hover:bg-sky-50/40 dark:hover:bg-slate-800/40 transition-colors group">
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedProjectId(p.id);
+                                      setIsEditingProject(false);
+                                    }}
+                                    className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-500 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                    title="Click to open project details"
+                                  >
+                                    <span>{p.id}</span>
+                                  </button>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedProjectId(p.id);
+                                      setIsEditingProject(false);
+                                    }}
+                                    className="text-left font-bold text-slate-900 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 block truncate max-w-sm cursor-pointer"
+                                  >
+                                    {p.title}
+                                  </button>
+                                  <span className="text-[10px] text-slate-400 block truncate max-w-sm mt-0.5">
+                                    {p.description}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <span className="px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold text-[11px] border border-sky-200/80 dark:border-sky-500/20">
+                                    {p.parentCategory || 'Fullstack'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700">
+                                    {p.subCategory || 'Frappe Framework'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <span
+                                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                      p.status === 'Live'
+                                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20'
+                                        : p.status === 'In Development'
+                                        ? 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/20'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                    }`}
+                                  >
+                                    {p.status}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <div className="flex items-center gap-2">
+                                    {p.liveUrl && (
+                                      <a
+                                        href={p.liveUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-slate-400 hover:text-sky-600"
+                                        title="Live URL"
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                      </a>
+                                    )}
+                                    {p.githubUrl && (
+                                      <a
+                                        href={p.githubUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                                        title="GitHub URL"
+                                      >
+                                        <Github className="w-3.5 h-3.5" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {/* View Public Live Page */}
+                                    <Link
+                                      href={`/projects/${p.id}`}
+                                      target="_blank"
+                                      className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                      title="Open live project in new tab"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedProjectId(p.id);
+                                        setIsEditingProject(true);
+                                      }}
+                                      className="p-1.5 text-slate-400 hover:text-sky-600 transition-colors cursor-pointer"
+                                      title="Edit Project"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteProject(p.id)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                      title="Delete Project"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* ========================================================= */}
@@ -2749,168 +3340,339 @@ export function AdminDashboard() {
             {/* 5. ARTICLES & BLOG CMS                                    */}
             {/* ========================================================= */}
             {activeTab === 'articles' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-200">
-                {/* Post Drafter Form */}
-                <div className="lg:col-span-5 space-y-4">
-                  <form onSubmit={handlePublishArticle} className="p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-base font-bold text-slate-900 dark:text-white font-display">Draft New Article</span>
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-semibold">
-                        Markdown Ready
-                      </span>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Title</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Next.js 15 Streaming Performance Deep Dive"
-                        value={articleTitle}
-                        onChange={(e) => setArticleTitle(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Category</label>
-                        <select
-                          value={articleCategory}
-                          onChange={(e) => setArticleCategory(e.target.value as any)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+              selectedArticleId ? (
+                (() => {
+                  const currentArticle = data.articles.find((a) => a.id === selectedArticleId);
+                  if (!currentArticle) {
+                    return (
+                      <div className="p-8 text-center space-y-4 bg-white dark:bg-[#0f172a] rounded-3xl border border-slate-200 dark:border-slate-800">
+                        <p className="text-sm text-slate-500">Article not found.</p>
+                        <button
+                          onClick={() => { setSelectedArticleId(null); setIsEditingArticle(false); }}
+                          className="px-4 py-2 rounded-full text-xs font-semibold bg-sky-600 text-white"
                         >
-                          <option value="Architecture">Architecture</option>
-                          <option value="Frontend">Frontend</option>
-                          <option value="Performance">Performance</option>
-                          <option value="AI & LLMs">AI & LLMs</option>
-                          <option value="Build Tools">Build Tools</option>
-                          <option value="Developer Log">Developer Log</option>
-                        </select>
+                          Return to List View
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Sub-Header inside Opened Article */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedArticleId(null); setIsEditingArticle(false); }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <span>Back to List View</span>
+                          </button>
+
+                          <div className="hidden sm:flex items-center gap-2 text-xs">
+                            <span className="font-mono text-slate-400">ID:</span>
+                            <span className="font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-500/20">
+                              {currentArticle.id}
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span className="text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs">
+                              {currentArticle.title}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/blog/${currentArticle.id}`}
+                            target="_blank"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            title="Open public page in new tab"
+                          >
+                            <span>Live Page</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+
+                          {!isEditingArticle ? (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingArticle(true)}
+                              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 shadow-md shadow-sky-600/25 transition-all cursor-pointer"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>Edit Article</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingArticle(false)}
+                              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 transition-colors cursor-pointer"
+                            >
+                              Exit Edit Mode
+                            </button>
+                          )}
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Status</label>
-                        <select
-                          value={articleStatus}
-                          onChange={(e) => setArticleStatus(e.target.value as any)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                        >
-                          <option value="Published">Published</option>
-                          <option value="Draft">Draft</option>
-                          <option value="In Review">In Review</option>
-                        </select>
+                      {/* Article Display Canvas: View or Edit Mode */}
+                      <BlogDetailsView
+                        article={currentArticle}
+                        mode={isEditingArticle ? 'edit' : 'view'}
+                        onSave={handleSaveArticle}
+                        onCancel={() => setIsEditingArticle(false)}
+                      />
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* List View Top Bar */}
+                  <div className="p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">
+                          Articles & Engineering Guidelines
+                        </h2>
+                        <span className="px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 text-xs font-semibold border border-sky-200/80 dark:border-sky-500/20">
+                          {filteredArticles.length} Entries
+                        </span>
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Tags (comma-separated)</label>
-                      <input
-                        type="text"
-                        placeholder="Next.js, WebGPU, Streaming"
-                        value={articleTags}
-                        onChange={(e) => setArticleTags(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Excerpt</label>
-                      <input
-                        type="text"
-                        placeholder="Short 1-2 sentence overview..."
-                        value={articleExcerpt}
-                        onChange={(e) => setArticleExcerpt(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Markdown Body</label>
-                      <textarea
-                        rows={6}
-                        required
-                        placeholder="Detailed architectural breakdown and code benchmarks..."
-                        value={articleContent}
-                        onChange={(e) => setArticleContent(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 font-mono"
-                      />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Click on any <span className="font-semibold text-sky-600 dark:text-sky-400">Blog ID</span> or title below to open it. Once opened, click the <strong>Edit</strong> button to edit and save.
+                      </p>
                     </div>
 
                     <button
-                      type="submit"
-                      className="w-full py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      type="button"
+                      onClick={handleCreateNewArticle}
+                      className="px-4 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Publish to Blog Vault</span>
+                      <Plus className="w-4 h-4" />
+                      <span>+ Create Guideline</span>
                     </button>
-                  </form>
-                </div>
+                  </div>
 
-                {/* Articles Registry Table */}
-                <div className="lg:col-span-7 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="relative flex-1">
+                  {/* List View Search & Filter Bar */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search articles in vault..."
+                        placeholder="Search by ID (e.g. blog-001), title, category, or tags..."
                         value={articleSearch}
                         onChange={(e) => setArticleSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
+                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                       />
                     </div>
+
+                    <select
+                      value={articleParentFilter}
+                      onChange={(e) => {
+                        setArticleParentFilter(e.target.value);
+                        setArticleSubFilter('All');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 cursor-pointer"
+                    >
+                      <option value="All">All Parent Categories</option>
+                      {PARENT_CATEGORIES.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={articleSubFilter}
+                      onChange={(e) => setArticleSubFilter(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 cursor-pointer"
+                    >
+                      <option value="All">All Subcategories</option>
+                      {(articleParentFilter !== 'All'
+                        ? getSubcategoriesForParent(articleParentFilter)
+                        : PARENT_CATEGORIES.flatMap((p) => p.subcategories)
+                      ).map((sub) => (
+                        <option key={sub} value={sub}>
+                          {sub}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
+                  {/* Full-Width Articles List View Table */}
                   <div className="rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
+                      <table className="w-full text-left text-xs min-w-[750px]">
                         <thead className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                           <tr>
-                            <th className="py-3 px-4">Title</th>
-                            <th className="py-3 px-3">Category</th>
-                            <th className="py-3 px-3">Status</th>
-                            <th className="py-3 px-3 text-right">Actions</th>
+                            <th className="py-3.5 px-4">Blog ID</th>
+                            <th className="py-3.5 px-4">Title & Details</th>
+                            <th className="py-3.5 px-3">Parent Category</th>
+                            <th className="py-3.5 px-3">Sub-Framework</th>
+                            <th className="py-3.5 px-3">Status</th>
+                            <th className="py-3.5 px-3">Forum</th>
+                            <th className="py-3.5 px-3">Engagement</th>
+                            <th className="py-3.5 px-3 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200">
-                          {filteredArticles.map((art) => (
-                            <tr key={art.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                              <td className="py-3 px-4">
-                                <span className="font-bold text-slate-900 dark:text-white block truncate max-w-[220px]">
-                                  {art.title}
-                                </span>
-                                <span className="text-[10px] text-slate-400">{art.publishedDate}</span>
-                              </td>
-                              <td className="py-3 px-3 font-mono text-[11px] text-sky-600 dark:text-sky-400">{art.category}</td>
-                              <td className="py-3 px-3">
-                                <span
-                                  className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                    art.status === 'Published'
-                                      ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                      : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                                  }`}
-                                >
-                                  {art.status}
-                                </span>
-                              </td>
-                              <td className="py-3 px-3 text-right">
-                                <button
-                                  onClick={() => handleDeleteArticle(art.id)}
-                                  className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                          {filteredArticles.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} className="py-8 text-center text-slate-400">
+                                No articles matched your search query.
                               </td>
                             </tr>
-                          ))}
+                          ) : (
+                            filteredArticles.map((art) => (
+                              <tr
+                                key={art.id}
+                                className="hover:bg-sky-50/40 dark:hover:bg-slate-800/40 transition-colors group"
+                              >
+                                {/* Clickable Blog ID */}
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedArticleId(art.id);
+                                      setIsEditingArticle(false);
+                                    }}
+                                    className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-500 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                    title="Click to open blog details"
+                                  >
+                                    <span>{art.id}</span>
+                                  </button>
+                                </td>
+
+                                {/* Title & Slug (Clickable to open) */}
+                                <td className="py-3 px-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedArticleId(art.id);
+                                      setIsEditingArticle(false);
+                                    }}
+                                    className="text-left font-bold text-slate-900 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 block truncate max-w-sm cursor-pointer"
+                                  >
+                                    {art.title}
+                                  </button>
+                                  <span className="text-[10px] text-slate-400 block truncate max-w-sm mt-0.5">
+                                    {art.excerpt}
+                                  </span>
+                                </td>
+
+                                {/* Parent Category */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <span className="px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold text-[11px] border border-sky-200/80 dark:border-sky-500/20">
+                                    {art.parentCategory || 'Fullstack'}
+                                  </span>
+                                </td>
+
+                                {/* Subcategory */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700">
+                                    {art.subCategory || art.category}
+                                  </span>
+                                </td>
+
+                                {/* Status */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <span
+                                    className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                      art.status === 'Published'
+                                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                        : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                    }`}
+                                  >
+                                    {art.status}
+                                  </span>
+                                </td>
+
+                                {/* Forum Thread */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  {art.forumUrl ? (
+                                    <a
+                                      href={art.forumUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:text-sky-700 text-[10px] font-medium"
+                                      title="Open forum thread"
+                                    >
+                                      <MessageSquare className="w-2.5 h-2.5" />
+                                      <span>discuss.frappe.io</span>
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-400 text-[10px]">—</span>
+                                  )}
+                                </td>
+
+                                {/* Metrics */}
+                                <td className="py-3 px-3 whitespace-nowrap text-[11px] text-slate-500 dark:text-slate-400">
+                                  <div>{art.views}</div>
+                                  <div className="text-[10px] text-slate-400">{art.readTime}</div>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-3 px-3 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {/* Open Reader */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedArticleId(art.id);
+                                        setIsEditingArticle(false);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                      title="Open blog in reader mode"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      <span>Open</span>
+                                    </button>
+
+                                    {/* Direct Edit */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedArticleId(art.id);
+                                        setIsEditingArticle(true);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                      title="Open directly in edit mode"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                      <span>Edit</span>
+                                    </button>
+
+                                    {/* View Public Live Page */}
+                                    <Link
+                                      href={`/blog/${art.id}`}
+                                      target="_blank"
+                                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                      title="View live public page in new tab"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </Link>
+
+                                    {/* Delete */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteArticle(art.id)}
+                                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                                      title="Delete article"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* ========================================================= */}
@@ -3225,6 +3987,126 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {/* ADD / EDIT TECH RADAR ITEM MODAL */}
+      {editingTech && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl p-6 md:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
+                  {isNewTech ? 'Add Technology to Radar' : 'Edit Production Technology'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTech(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Technology / Tool Name
+                </label>
+                <input
+                  type="text"
+                  value={editingTech.name}
+                  onChange={(e) => setEditingTech({ ...editingTech, name: e.target.value })}
+                  placeholder="e.g. Python, Frappe Framework, MariaDB"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={editingTech.category}
+                    onChange={(e) => setEditingTech({ ...editingTech, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="Backend & Enterprise Logic">Backend & Enterprise Logic</option>
+                    <option value="Databases & Data Engineering">Databases & Data Engineering</option>
+                    <option value="Frontend & Modern Web">Frontend & Modern Web</option>
+                    <option value="Cloud, Notifications & Tooling">Cloud, Notifications & Tooling</option>
+                    <option value="Architecture & Craft">Architecture & Craft</option>
+                    <option value="Languages & Core">Languages & Core</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Experience / Tenure
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTech.experienceYears}
+                    onChange={(e) => setEditingTech({ ...editingTech, experienceYears: e.target.value })}
+                    placeholder="e.g. 4+ yrs"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Proficiency Classification
+                </label>
+                <select
+                  value={editingTech.proficiency}
+                  onChange={(e) => setEditingTech({ ...editingTech, proficiency: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                >
+                  <option value="Production Battle-Tested">Production Battle-Tested (Proven in production)</option>
+                  <option value="Core Daily Stack">Core Daily Stack (Used daily)</option>
+                  <option value="Advanced Specialization">Advanced Specialization (Niche / AI / High-impact)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Sub-specializations & Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={(editingTech.tags || []).join(', ')}
+                  onChange={(e) =>
+                    setEditingTech({
+                      ...editingTech,
+                      tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
+                    })
+                  }
+                  placeholder="e.g. Backend APIs, Automation, Scripting"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setEditingTech(null)}
+                className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTechModal}
+                className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
+              >
+                Save Technology
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ADD / EDIT WHAT I DO SERVICE CARD MODAL */}
       {editingWhatIDo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
@@ -3313,151 +4195,7 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* PROJECT MODAL (KEPT SAME AS REQUESTED) */}
-      {editingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <FolderGit2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
-                  {isNewProject ? 'Add New Project' : 'Edit Project Vault'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setEditingProject(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={editingProject.title}
-                    onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Slug</label>
-                  <input
-                    type="text"
-                    value={editingProject.slug}
-                    onChange={(e) => setEditingProject({ ...editingProject, slug: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Category</label>
-                  <select
-                    value={editingProject.category}
-                    onChange={(e) => setEditingProject({ ...editingProject, category: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="Web Apps">Web Apps</option>
-                    <option value="Open Source">Open Source</option>
-                    <option value="AI & Tools">AI & Tools</option>
-                    <option value="Full Stack">Full Stack</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Status</label>
-                  <select
-                    value={editingProject.status}
-                    onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="Live">Live</option>
-                    <option value="In Development">In Development</option>
-                    <option value="Archived">Archived</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Short Description</label>
-                <input
-                  type="text"
-                  value={editingProject.description}
-                  onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Long Architectural Overview</label>
-                <textarea
-                  rows={3}
-                  value={editingProject.longDescription}
-                  onChange={(e) => setEditingProject({ ...editingProject, longDescription: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Live Demo URL</label>
-                  <input
-                    type="text"
-                    value={editingProject.liveUrl}
-                    onChange={(e) => setEditingProject({ ...editingProject, liveUrl: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">GitHub Repo URL</label>
-                  <input
-                    type="text"
-                    value={editingProject.githubUrl}
-                    onChange={(e) => setEditingProject({ ...editingProject, githubUrl: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Tags (comma-separated)</label>
-                <input
-                  type="text"
-                  value={editingProject.tags.join(', ')}
-                  onChange={(e) =>
-                    setEditingProject({
-                      ...editingProject,
-                      tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setEditingProject(null)}
-                className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveProjectModal}
-                className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
-              >
-                Save Project
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* EXPERIENCE MODAL (KEPT SAME AS REQUESTED) */}
       {editingExp && (

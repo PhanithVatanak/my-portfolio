@@ -17,65 +17,39 @@ import {
 } from 'lucide-react';
 import { usePortfolioData } from '@/components/PortfolioDataContext';
 
-interface TechItem {
-  name: string;
-  category: string;
-  proficiency: 'Production Battle-Tested' | 'Core Daily Stack' | 'Advanced Specialization';
-  experienceYears: string;
-  tags: string[];
-}
+import { TechRadarItem } from '@/lib/types';
+import { initialTechRadar } from '@/lib/data';
 
 export function TechRadarSection() {
   const { data } = usePortfolioData();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const detailedSkills: TechItem[] = useMemo(
-    () => [
-      // Languages
-      { name: 'TypeScript', category: 'Languages & Core', proficiency: 'Core Daily Stack', experienceYears: '5+ yrs', tags: ['Strict Mode', 'Generics', 'Type-Level Systems'] },
-      { name: 'JavaScript (ES6+)', category: 'Languages & Core', proficiency: 'Production Battle-Tested', experienceYears: '6+ yrs', tags: ['Async/Await', 'Event Loop', 'V8 Optimization'] },
-      { name: 'HTML5 Semantic', category: 'Languages & Core', proficiency: 'Production Battle-Tested', experienceYears: '6+ yrs', tags: ['Accessibility', 'ARIA', 'SEO Rich Snippets'] },
-      { name: 'Modern CSS3 & PostCSS', category: 'Languages & Core', proficiency: 'Production Battle-Tested', experienceYears: '6+ yrs', tags: ['Grid', 'Flexbox', 'Custom Properties', 'Animations'] },
-      { name: 'SQL & Relational DBs', category: 'Languages & Core', proficiency: 'Production Battle-Tested', experienceYears: '4+ yrs', tags: ['PostgreSQL', 'Query Indexing', 'Joins'] },
+  const techRadarItems: TechRadarItem[] = useMemo(() => {
+    return data.techRadar && data.techRadar.length > 0 ? data.techRadar : initialTechRadar;
+  }, [data.techRadar]);
 
-      // Frameworks & Runtimes
-      { name: 'Next.js 14 / 15', category: 'Frameworks & Runtimes', proficiency: 'Core Daily Stack', experienceYears: '4+ yrs', tags: ['App Router', 'RSC Streaming', 'Server Actions', 'Turbopack'] },
-      { name: 'React 18 / 19', category: 'Frameworks & Runtimes', proficiency: 'Core Daily Stack', experienceYears: '5+ yrs', tags: ['Concurrent Mode', 'Hooks', 'Fiber Reconciliation'] },
-      { name: 'Tailwind CSS v3 / v4', category: 'Frameworks & Runtimes', proficiency: 'Core Daily Stack', experienceYears: '4+ yrs', tags: ['Tailwind v4 Oxide', 'Design Systems', 'Responsive Utility'] },
-      { name: 'Node.js & Edge Runtime', category: 'Frameworks & Runtimes', proficiency: 'Production Battle-Tested', experienceYears: '4+ yrs', tags: ['HTTP/2', 'Streams', 'Edge Middleware'] },
-      { name: 'Redux Toolkit & Zustand', category: 'Frameworks & Runtimes', proficiency: 'Production Battle-Tested', experienceYears: '4+ yrs', tags: ['Global State', 'Selectors', 'Immer'] },
-
-      // Cloud & Tooling
-      { name: 'Git & GitHub Workflows', category: 'Cloud & Tooling', proficiency: 'Core Daily Stack', experienceYears: '6+ yrs', tags: ['Actions CI/CD', 'Branching Strategies', 'PR Reviews'] },
-      { name: 'Docker & Containerization', category: 'Cloud & Tooling', proficiency: 'Production Battle-Tested', experienceYears: '3+ yrs', tags: ['Multi-Stage Builds', 'Compose', 'Dev Environments'] },
-      { name: 'Vercel & Cloudflare Edge', category: 'Cloud & Tooling', proficiency: 'Core Daily Stack', experienceYears: '4+ yrs', tags: ['Edge Functions', 'Analytics', 'DNS & Caching'] },
-      { name: 'Figma to Code', category: 'Cloud & Tooling', proficiency: 'Production Battle-Tested', experienceYears: '5+ yrs', tags: ['Component Tokens', 'Auto Layout', 'Design Specs'] },
-      { name: 'Vite & Webpack 5', category: 'Cloud & Tooling', proficiency: 'Production Battle-Tested', experienceYears: '4+ yrs', tags: ['HMR', 'Bundle Splitting', 'Tree-Shaking'] },
-
-      // Architecture & Methodologies
-      { name: 'Web Performance & Core Web Vitals', category: 'Architecture & Craft', proficiency: 'Advanced Specialization', experienceYears: '5+ yrs', tags: ['LCP / FID / CLS', 'Lighthouse 98+', 'Critical Path'] },
-      { name: 'Micro-Interactions & Motion', category: 'Architecture & Craft', proficiency: 'Advanced Specialization', experienceYears: '4+ yrs', tags: ['Framer Motion', 'FLIP Animation', 'Subpixel Polish'] },
-      { name: 'RESTful & GraphQL API Design', category: 'Architecture & Craft', proficiency: 'Production Battle-Tested', experienceYears: '5+ yrs', tags: ['Schema Stitching', 'Type-Safe Contracts', 'Payload Slicing'] },
-      { name: 'Agile & Technical Mentorship', category: 'Architecture & Craft', proficiency: 'Production Battle-Tested', experienceYears: '4+ yrs', tags: ['Sprint Planning', 'Code Reviews', 'Engineering Standards'] }
-    ],
-    []
-  );
-
-  const categories = ['All', 'Languages & Core', 'Frameworks & Runtimes', 'Cloud & Tooling', 'Architecture & Craft'];
+  // Dynamically derive categories from live data
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    techRadarItems.forEach((item) => {
+      if (item.category) cats.add(item.category);
+    });
+    return ['All', ...Array.from(cats)];
+  }, [techRadarItems]);
 
   const filteredSkills = useMemo(() => {
-    return detailedSkills.filter((item) => {
+    return techRadarItems.filter((item) => {
       const matchesCat = selectedCategory === 'All' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
         !q ||
         item.name.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q) ||
-        item.tags.some((t) => t.toLowerCase().includes(q));
+        (item.tags || []).some((t) => t.toLowerCase().includes(q));
       return matchesCat && matchesQuery;
     });
-  }, [detailedSkills, selectedCategory, searchQuery]);
+  }, [techRadarItems, selectedCategory, searchQuery]);
 
   return (
     <section className="w-full space-y-6">

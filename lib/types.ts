@@ -1,10 +1,12 @@
 export interface Project {
-  id: string;
+  id: string; // e.g. pro-001, pro-002
   title: string;
   slug: string;
   description: string;
   longDescription: string;
-  category: 'Web Apps' | 'Open Source' | 'AI & Tools' | 'Full Stack';
+  parentCategory?: string; // e.g. Fullstack, Frontend, Backend, Database
+  subCategory?: string; // e.g. Frappe Framework, React Js, Python, PostgreSQL
+  category: 'Web Apps' | 'Open Source' | 'AI & Tools' | 'Full Stack' | string;
   tags: string[];
   liveUrl: string;
   githubUrl: string;
@@ -15,6 +17,13 @@ export interface Project {
   metrics?: string;
   architectureHighlights?: string[];
   previewGradient?: string;
+  content?: string; // rich markdown / section documentation
+  codeSnippet?: {
+    filename: string;
+    language: string;
+    code: string;
+    metrics?: { ttfb: string; hydrationCost: string };
+  };
 }
 
 export interface Experience {
@@ -67,10 +76,12 @@ export interface SpokenLanguage {
 }
 
 export interface Article {
-  id: string;
+  id: string; // e.g. blog-001, blog-002
   title: string;
   slug: string;
-  category: 'Architecture' | 'Build Tools' | 'Frontend' | 'AI & LLMs' | 'Performance' | 'Developer Log';
+  parentCategory?: string; // e.g. Fullstack, Frontend, Backend, Database
+  subCategory?: string; // e.g. Frappe Framework, React Js, Python, PostgreSQL
+  category: 'Architecture' | 'Build Tools' | 'Frontend' | 'AI & LLMs' | 'Performance' | 'Developer Log' | 'Frappe Framework' | string;
   views: string;
   readRate: string;
   readTime: string;
@@ -79,11 +90,13 @@ export interface Article {
   excerpt: string;
   tags: string[];
   featured?: boolean;
+  forumUrl?: string;
+  forumBadge?: string;
   codeSnippet?: {
     filename: string;
     language: string;
     code: string;
-    metrics: { ttfb: string; hydrationCost: string };
+    metrics?: { ttfb: string; hydrationCost: string };
   };
   content?: string;
 }
@@ -151,6 +164,15 @@ export interface DeveloperProfile {
   };
 }
 
+export interface TechRadarItem {
+  id: string;
+  name: string;
+  category: string;
+  proficiency: 'Production Battle-Tested' | 'Core Daily Stack' | 'Advanced Specialization';
+  experienceYears: string;
+  tags: string[];
+}
+
 export interface PortfolioData {
   profile: DeveloperProfile;
   whatIDo: WhatIDoItem[];
@@ -159,6 +181,7 @@ export interface PortfolioData {
   education: EducationItem[];
   languages: SpokenLanguage[];
   skills: SkillCategory[];
+  techRadar?: TechRadarItem[];
   interests: InterestItem[];
   articles: Article[];
   telemetry: TelemetryMetrics;

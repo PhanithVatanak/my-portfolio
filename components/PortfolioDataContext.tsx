@@ -12,7 +12,8 @@ import {
   Article,
   SkillCategory,
   InterestItem,
-  TelemetryMetrics
+  TelemetryMetrics,
+  TechRadarItem
 } from '@/lib/types';
 import {
   developerProfile as initialProfile,
@@ -24,7 +25,8 @@ import {
   skillCategories as initialSkills,
   personalInterests as initialInterests,
   initialArticles,
-  telemetryMetrics as initialTelemetry
+  telemetryMetrics as initialTelemetry,
+  initialTechRadar
 } from '@/lib/data';
 
 const defaultPortfolioData: PortfolioData = {
@@ -35,6 +37,7 @@ const defaultPortfolioData: PortfolioData = {
   education: initialEducation,
   languages: initialLanguages,
   skills: initialSkills,
+  techRadar: initialTechRadar,
   interests: initialInterests,
   articles: initialArticles,
   telemetry: initialTelemetry,
@@ -52,11 +55,29 @@ interface PortfolioDataContextType {
   updateEducation: (education: EducationItem[]) => Promise<boolean>;
   updateLanguages: (languages: SpokenLanguage[]) => Promise<boolean>;
   updateSkills?: (skills: SkillCategory[]) => Promise<boolean>;
+  updateTechRadar?: (techRadar: TechRadarItem[]) => Promise<boolean>;
   updateInterests?: (interests: InterestItem[]) => Promise<boolean>;
   updateArticles: (articles: Article[]) => Promise<boolean>;
   resetToDefaults: () => Promise<boolean>;
   importJson: (jsonString: string, targetSection?: string) => Promise<{ success: boolean; section?: string; count?: number; error?: string }>;
   getFormattedJson: () => string;
+}
+
+function normalizeDataSlugs(pData: PortfolioData): PortfolioData {
+  if (!pData) return pData;
+  const articles = (pData.articles || []).map((art) => {
+    if (art.id && (art.slug !== art.id || art.slug?.includes('frappe-framework-2026-guideline'))) {
+      return { ...art, slug: art.id };
+    }
+    return art;
+  });
+  const projects = (pData.projects || []).map((proj) => {
+    if (proj.id && proj.slug !== proj.id) {
+      return { ...proj, slug: proj.id };
+    }
+    return proj;
+  });
+  return { ...pData, articles, projects };
 }
 
 const PortfolioDataContext = createContext<PortfolioDataContextType | undefined>(undefined);
@@ -70,7 +91,7 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
-          return { ...defaultPortfolioData, ...parsed };
+          return normalizeDataSlugs({ ...defaultPortfolioData, ...parsed });
         }
       }
     } catch {
@@ -90,10 +111,11 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
       .then((res) => res.json())
       .then((resData) => {
         if (active && resData.success && resData.data) {
-          setData(resData.data);
+          const normalized = normalizeDataSlugs(resData.data);
+          setData(normalized);
           setLastUpdated(resData.timestamp || new Date().toISOString());
           try {
-            localStorage.setItem('spv_portfolio_live_data', JSON.stringify(resData.data));
+            localStorage.setItem('spv_portfolio_live_data', JSON.stringify(normalized));
           } catch {
             // storage quota
           }
@@ -113,13 +135,14 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
 
   // Central commit function
   const commitData = useCallback(async (updated: PortfolioData): Promise<boolean> => {
-    setData(updated);
+    const normalized = normalizeDataSlugs(updated);
+    setData(normalized);
     const now = new Date().toISOString();
     setLastUpdated(now);
 
     // Save to localStorage immediately
     try {
-      localStorage.setItem('spv_portfolio_live_data', JSON.stringify(updated));
+      localStorage.setItem('spv_portfolio_live_data', JSON.stringify(normalized));
     } catch (e) {
       console.warn('Failed saving to localStorage:', e);
     }
@@ -198,6 +221,13 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
   const updateSkills = useCallback(
     async (skills: SkillCategory[]): Promise<boolean> => {
       return saveData({ skills });
+    },
+    [saveData]
+  );
+
+  const updateTechRadar = useCallback(
+    async (techRadar: TechRadarItem[]): Promise<boolean> => {
+      return saveData({ techRadar });
     },
     [saveData]
   );
@@ -296,6 +326,7 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
           'education',
           'languages',
           'skills',
+          'techRadar',
           'interests',
           'articles',
           'telemetry'
@@ -367,6 +398,7 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
         updateEducation,
         updateLanguages,
         updateSkills,
+        updateTechRadar,
         updateInterests,
         updateArticles,
         resetToDefaults,
