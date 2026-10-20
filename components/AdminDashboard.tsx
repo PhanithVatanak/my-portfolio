@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Home,
@@ -55,7 +56,11 @@ import {
   KeyRound,
   EyeOff,
   Sliders,
-  AlertTriangle
+  AlertTriangle,
+  Maximize2,
+  Minimize2,
+  Clipboard,
+  CheckCheck
 } from 'lucide-react';
 import { usePortfolioData } from './PortfolioDataContext';
 import { useToast } from './ToastContext';
@@ -668,9 +673,342 @@ export function AdminDashboard() {
     }
   };
 
-  // JSON Vault actions
+  // JSON Vault actions & smart partial importer
   const [jsonInput, setJsonInput] = useState('');
   const [jsonModalOpen, setJsonModalOpen] = useState(false);
+  const [jsonModalFullscreen, setJsonModalFullscreen] = useState(false);
+  const [jsonTargetSection, setJsonTargetSection] = useState<string>('skills');
+
+  // Target Section definitions for granular imports
+  const TARGET_SECTION_TABS = useMemo(
+    () => [
+      { id: 'auto', label: '⚡ Smart Auto-Detect', sectionName: 'Entire / Auto' },
+      { id: 'skills', label: '🎯 Skills', sectionName: 'Skills' },
+      { id: 'whatIDo', label: '💼 What I Do', sectionName: 'What I Do' },
+      { id: 'projects', label: '🚀 Projects', sectionName: 'Projects' },
+      { id: 'experiences', label: '📜 Experiences', sectionName: 'Experiences' },
+      { id: 'education', label: '🎓 Education', sectionName: 'Education' },
+      { id: 'languages', label: '🌐 Languages', sectionName: 'Languages' },
+      { id: 'articles', label: '✍️ Articles', sectionName: 'Articles' },
+      { id: 'profile', label: '👤 Profile', sectionName: 'Profile' },
+      { id: 'interests', label: '💡 Interests', sectionName: 'Interests' },
+    ],
+    []
+  );
+
+  // Canonical sample templates for all sections
+  const SECTION_SAMPLES: Record<string, string> = useMemo(
+    () => ({
+      skills: JSON.stringify(
+        {
+          skills: [
+            {
+              title: 'Languages & Core',
+              icon: 'code',
+              skills: ['JavaScript (ES6+)', 'TypeScript', 'Python', 'SQL', 'HTML5/CSS3'],
+            },
+            {
+              title: 'Frameworks & Libraries',
+              icon: 'layers',
+              skills: ['React', 'Next.js', 'FastAPI', 'Node.js', 'Tailwind CSS'],
+            },
+            {
+              title: 'Tools & Platforms',
+              icon: 'wrench',
+              skills: ['Git & GitHub', 'Docker', 'VS Code', 'Vercel', 'Linux'],
+            },
+            {
+              title: 'Soft Skills',
+              icon: 'users',
+              skills: ['System Architecture', 'Problem Solving', 'Agile & Scrum', 'Technical Writing'],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      whatIDo: JSON.stringify(
+        {
+          whatIDo: [
+            {
+              id: 'frappe-development',
+              title: 'Frappe Development',
+              description:
+                'Developing and maintaining custom Frappe applications, workflows, DocTypes, permissions, and business features for business operations.',
+              icon: 'code',
+            },
+            {
+              id: 'backend-api',
+              title: 'Backend & API Development',
+              description:
+                'Building backend logic, developing REST APIs, handling data validation and authentication, and connecting applications with databases and external services using Python.',
+              icon: 'server',
+            },
+            {
+              id: 'database-development',
+              title: 'Database Development',
+              description:
+                'Designing database queries, managing relational databases, optimizing SQL operations, and handling data migration using MariaDB, MySQL, and PostgreSQL.',
+              icon: 'database',
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      projects: JSON.stringify(
+        {
+          projects: [
+            {
+              id: 'sample-project',
+              title: 'Enterprise ERP Suite',
+              slug: 'enterprise-erp-suite',
+              tagline: 'Custom Frappe & Next.js ERP for enterprise workflows',
+              category: 'Enterprise Software',
+              role: 'Lead Full-Stack Developer',
+              image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+              tags: ['Frappe', 'Python', 'React', 'MariaDB'],
+              featured: true,
+              summary: 'End-to-end ERP deployment streamlining inventory, purchasing, and invoicing.',
+              overview: 'Detailed overview of system requirements, implementation architecture, and team outcomes.',
+              challenges: 'High volume transactional synchronization and strict role-based access control.',
+              outcomes: ['50% reduction in reporting turnaround', 'Automated reconciliation routines'],
+              metrics: [
+                { label: 'Active Users', value: '2,500+' },
+                { label: 'Sync Latency', value: '<120ms' },
+              ],
+              technologies: ['Frappe Framework', 'Python', 'Next.js', 'PostgreSQL'],
+              githubUrl: 'https://github.com/example/erp',
+              liveUrl: 'https://erp.example.com',
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      experiences: JSON.stringify(
+        {
+          experiences: [
+            {
+              id: 'sample-exp',
+              role: 'Senior Software Engineer',
+              company: 'Tech Solutions Co.',
+              location: 'Phnom Penh, Cambodia',
+              period: '2023 - Present',
+              description: 'Leading enterprise application architecture and cloud-native backend deployments.',
+              achievements: [
+                'Engineered automated transactional pipelines handling 50k+ daily actions',
+                'Reduced system latency by 45% via indexed database refactoring',
+              ],
+              technologies: ['Python', 'Frappe', 'React', 'Docker', 'PostgreSQL'],
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      education: JSON.stringify(
+        {
+          education: [
+            {
+              id: 'sample-edu',
+              degree: 'Bachelor of Computer Science & Software Engineering',
+              institution: 'Royal University of Phnom Penh (RUPP)',
+              location: 'Phnom Penh, Cambodia',
+              period: '2016 - 2020',
+              honors: 'Graduated with Honors (GPA 3.85 / 4.0)',
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      languages: JSON.stringify(
+        {
+          languages: [
+            {
+              id: 'lang-km',
+              language: 'Khmer',
+              proficiency: 'Native',
+              level: 'Native / Bilingual',
+            },
+            {
+              id: 'lang-en',
+              language: 'English',
+              proficiency: 'Professional Working',
+              level: 'C1 / Advanced',
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      articles: JSON.stringify(
+        {
+          articles: [
+            {
+              id: 'sample-art',
+              slug: 'building-resilient-architectures',
+              title: 'Building Resilient Microservices with Python and Frappe',
+              excerpt: 'In-depth engineering patterns for scalable multi-tenant architectures.',
+              date: '2024-03-15',
+              readTime: '6 min read',
+              category: 'Architecture',
+              tags: ['Python', 'Frappe', 'Architecture'],
+              featured: true,
+              content: '# Building Resilient Microservices\n\nModern cloud systems demand resilience...',
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      profile: JSON.stringify(
+        {
+          profile: {
+            name: 'Sun Phanith Vatanak',
+            title: 'Software Engineer & ERP / Frappe Specialist',
+            headline: 'Full-Stack Developer | Enterprise Systems Architect',
+            bio: 'Software Engineer specializing in scalable enterprise platforms, custom ERP frameworks, and modern web architectures.',
+            location: 'Phnom Penh, Cambodia',
+            email: 'phanithvatanak.sun@gmail.com',
+            phone: '+855 12 345 678',
+            availability: 'Open for consulting & architectural advisory',
+            stats: {
+              yearsExperience: '4+',
+              completedProjects: '25+',
+              clientSatisfaction: '100%',
+            },
+          },
+        },
+        null,
+        2
+      ),
+      interests: JSON.stringify(
+        {
+          interests: [
+            { id: 'coffee', label: 'Coffee', icon: 'coffee' },
+            { id: 'gaming', label: 'Gaming', icon: 'gamepad' },
+            { id: 'travel', label: 'Travel', icon: 'compass' },
+          ],
+        },
+        null,
+        2
+      ),
+    }),
+    []
+  );
+
+  // Helper to extract clean live JSON formatted by section
+  const getLiveSectionJson = (sectionKey: string): string => {
+    if (sectionKey === 'auto') {
+      return JSON.stringify(data, null, 2);
+    }
+    const sectionVal = (data as any)[sectionKey];
+    if (sectionVal !== undefined) {
+      return JSON.stringify({ [sectionKey]: sectionVal }, null, 2);
+    }
+    return '';
+  };
+
+  // Switch target section tab AND immediately populate editor with that section's live JSON
+  const handleSelectTargetSection = (targetId: string) => {
+    setJsonTargetSection(targetId);
+    if (targetId === 'auto') {
+      showToast('Switched to Auto-Detect mode. Paste any full or partial JSON.', 'info');
+      return;
+    }
+    const liveJson = getLiveSectionJson(targetId);
+    if (liveJson) {
+      setJsonInput(liveJson);
+      const tabMeta = TARGET_SECTION_TABS.find((t) => t.id === targetId);
+      const sectionVal = (data as any)[targetId];
+      const countMsg = Array.isArray(sectionVal) ? ` (${sectionVal.length} items)` : '';
+      showToast(`Loaded live "${tabMeta?.sectionName || targetId}" JSON${countMsg}! Edit & Apply to update only this section.`, 'info');
+    }
+  };
+
+  // Re-fetch current live section data to editor
+  const handleReloadLiveTarget = () => {
+    if (jsonTargetSection === 'auto') {
+      setJsonInput(JSON.stringify(data, null, 2));
+      showToast('Loaded full portfolio live JSON.', 'info');
+      return;
+    }
+    const liveJson = getLiveSectionJson(jsonTargetSection);
+    if (liveJson) {
+      setJsonInput(liveJson);
+      const tabMeta = TARGET_SECTION_TABS.find((t) => t.id === jsonTargetSection);
+      showToast(`Reloaded live "${tabMeta?.sectionName || jsonTargetSection}" data.`, 'info');
+    }
+  };
+
+  // Load a clean sample snippet for the active target
+  const handleLoadSampleForTarget = () => {
+    const targetKey = jsonTargetSection === 'auto' ? 'skills' : jsonTargetSection;
+    const sample = SECTION_SAMPLES[targetKey];
+    if (sample) {
+      setJsonInput(sample);
+      if (jsonTargetSection === 'auto') setJsonTargetSection('skills');
+      const tabMeta = TARGET_SECTION_TABS.find((t) => t.id === targetKey);
+      showToast(`Loaded clean "${tabMeta?.sectionName || targetKey}" sample template!`, 'info');
+    } else {
+      showToast(`Sample not available for "${targetKey}".`, 'info');
+    }
+  };
+
+  // Open modal pre-focused and populated with a specific section
+  const openJsonModalForSection = (sectionKey: string = 'skills') => {
+    setJsonTargetSection(sectionKey);
+    const liveJson = getLiveSectionJson(sectionKey);
+    setJsonInput(liveJson);
+    setJsonModalOpen(true);
+    const tabMeta = TARGET_SECTION_TABS.find((t) => t.id === sectionKey);
+    showToast(`Opened JSON Vault loaded with live "${tabMeta?.sectionName || sectionKey}" data.`, 'info');
+  };
+
+  // Real-time detection of payload structure & count
+  const detectedSection = useMemo(() => {
+    if (!jsonInput.trim()) return null;
+    let cleaned = jsonInput.trim().replace(/,\s*$/, '');
+    if (/^\s*"[a-zA-Z0-9_-]+"\s*:\s*[\[{]/.test(cleaned) && !cleaned.startsWith('{')) {
+      cleaned = `{${cleaned}}`;
+    }
+    cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) {
+        if (jsonTargetSection !== 'auto') {
+          return { section: jsonTargetSection, count: parsed.length, type: 'array' };
+        }
+        const first = parsed[0] || {};
+        if ('period' in first && 'company' in first) return { section: 'experiences', count: parsed.length, type: 'array' };
+        if ('category' in first && 'image' in first) return { section: 'projects', count: parsed.length, type: 'array' };
+        if ('degree' in first || 'institution' in first) return { section: 'education', count: parsed.length, type: 'array' };
+        if ('language' in first && 'proficiency' in first) return { section: 'languages', count: parsed.length, type: 'array' };
+        if ('skills' in first && ('category' in first || 'title' in first || Array.isArray(first.skills))) return { section: 'skills', count: parsed.length, type: 'array' };
+        if ('content' in first && 'slug' in first) return { section: 'articles', count: parsed.length, type: 'array' };
+        if ('title' in first && ('icon' in first || 'description' in first)) return { section: 'whatIDo', count: parsed.length, type: 'array' };
+        return { section: 'whatIDo', count: parsed.length, type: 'array' };
+      }
+      if (parsed && typeof parsed === 'object') {
+        const keys = Object.keys(parsed);
+        const valid = ['profile', 'whatIDo', 'projects', 'experiences', 'education', 'languages', 'skills', 'interests', 'articles', 'telemetry'];
+        const matched = keys.filter((k) => valid.includes(k));
+        if (matched.length === 1) {
+          const val = parsed[matched[0]];
+          const count = Array.isArray(val) ? val.length : undefined;
+          return { section: matched[0], count, type: 'single' };
+        }
+        if (matched.length > 1) {
+          return { section: matched.join(', '), type: 'multi', count: matched.length };
+        }
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }, [jsonInput, jsonTargetSection]);
 
   const handleCopyJson = async () => {
     const success = await copyToClipboard(getFormattedJson());
@@ -694,21 +1032,72 @@ export function AdminDashboard() {
     showToast('portfolio-data.json downloaded!', 'success');
   };
 
+  const handleFormatJson = () => {
+    try {
+      let cleaned = jsonInput.trim().replace(/,\s*$/, '');
+      if (/^\s*"[a-zA-Z0-9_-]+"\s*:\s*[\[{]/.test(cleaned) && !cleaned.startsWith('{')) {
+        cleaned = `{${cleaned}}`;
+      }
+      cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+      const obj = JSON.parse(cleaned);
+      setJsonInput(JSON.stringify(obj, null, 2));
+      showToast('JSON beautified & syntax validated!', 'success');
+    } catch (e: any) {
+      showToast(`Cannot format JSON: ${e.message}`, 'error');
+    }
+  };
+
+  const handlePasteClipboard = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setJsonInput(text);
+          showToast('Pasted from clipboard!', 'success');
+          return;
+        }
+      }
+      showToast('Clipboard read access not available. Use Ctrl+V to paste.', 'info');
+    } catch {
+      showToast('Please use Ctrl+V to paste into editor.', 'info');
+    }
+  };
+
   const handleImportJsonSubmit = async () => {
     if (!requireAdmin('Importing custom JSON')) return;
     if (!jsonInput.trim()) {
-      showToast('Please paste a JSON payload first.', 'error');
+      showToast('Please paste a JSON payload or section snippet first.', 'error');
       return;
     }
-    const result = await importJson(jsonInput);
+    const result = await importJson(jsonInput, jsonTargetSection);
     if (result.success) {
-      showToast('Custom portfolio JSON imported & all pages updated!', 'success');
+      const msg =
+        result.count !== undefined
+          ? `Successfully updated ${result.count} "${result.section}" items!`
+          : `Successfully imported & rehydrated ${result.section || 'portfolio'}!`;
+      showToast(msg, 'success');
       setJsonModalOpen(false);
       setJsonInput('');
     } else {
       showToast(`Import failed: ${result.error}`, 'error');
     }
   };
+
+  // Close JSON modal or exit fullscreen on Escape key
+  useEffect(() => {
+    if (!jsonModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (jsonModalFullscreen) {
+          setJsonModalFullscreen(false);
+        } else {
+          setJsonModalOpen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [jsonModalOpen, jsonModalFullscreen]);
 
   const handleResetDefaultsConfirm = async () => {
     if (!requireAdmin('Factory resetting portfolio')) return;
@@ -1180,7 +1569,7 @@ export function AdminDashboard() {
                     <span>Backup</span>
                   </button>
                   <button
-                    onClick={() => setJsonModalOpen(true)}
+                    onClick={() => openJsonModalForSection('skills')}
                     className="flex-1 py-1.5 px-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[10px] font-semibold flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <Upload className="w-3 h-3 text-sky-600" />
@@ -1422,14 +1811,25 @@ export function AdminDashboard() {
                         Manage capabilities and architectural focus cards shown on the homepage.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleOpenAddWhatIDo}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Service Card</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openJsonModalForSection('whatIDo')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                        title="Fast-paste a 'whatIDo' JSON snippet or array to update all service cards instantly"
+                      >
+                        <FileCode className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                        <span>⚡ Quick Import &quot;What I Do&quot; JSON</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddWhatIDo}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Service Card</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -2584,6 +2984,13 @@ export function AdminDashboard() {
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
+                      onClick={() => openJsonModalForSection('skills')}
+                      className="px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Section Importer & Vault</span>
+                    </button>
+                    <button
                       onClick={handleCopyJson}
                       className="px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
                     >
@@ -2592,7 +2999,7 @@ export function AdminDashboard() {
                     </button>
                     <button
                       onClick={handleDownloadJson}
-                      className="px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download</span>
@@ -3092,59 +3499,223 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* IMPORT JSON MODAL */}
-      {jsonModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
-                  Import Portfolio JSON Payload
-                </h3>
+      {/* SMART JSON VAULT IMPORTER MODAL */}
+      {jsonModalOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                if (jsonModalFullscreen) setJsonModalFullscreen(false);
+                else setJsonModalOpen(false);
+              }
+            }}
+            className={`fixed inset-0 z-[9999] flex items-center justify-center ${
+              jsonModalFullscreen ? 'p-0' : 'p-2 sm:p-4 md:p-6'
+            } bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-150`}
+          >
+            <div
+              className={`bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-2xl relative flex flex-col overflow-hidden transition-all duration-200 ${
+                jsonModalFullscreen
+                  ? 'w-screen h-screen max-w-none max-h-none rounded-none'
+                  : 'w-[96vw] max-w-6xl h-[92vh] max-h-[94vh] rounded-3xl'
+              }`}
+            >
+              {/* Header Command Bar */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-sm shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="size-9 rounded-xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+                    <FileCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-display">
+                        JSON Vault & Partial Section Importer
+                      </h3>
+                      {detectedSection && (
+                        <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-500/20 font-mono">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>
+                            Detected: {detectedSection.count ? `${detectedSection.count} ` : ''}
+                            &quot;{detectedSection.section}&quot;
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Paste full portfolio JSON or section snippets (e.g. &quot;whatIDo&quot;: [...], projects, experiences). Auto-detects & merges instantly.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePasteClipboard}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                    title="Paste from clipboard"
+                  >
+                    <Clipboard className="w-3.5 h-3.5" />
+                    <span>Paste</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleFormatJson}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                    title="Format & Validate JSON"
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                    <span>Format JSON</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setJsonInput('')}
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs transition-colors cursor-pointer"
+                    title="Clear editor"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Clear</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setJsonModalFullscreen(!jsonModalFullscreen)}
+                    className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
+                    title={jsonModalFullscreen ? 'Exit Fullscreen (Esc)' : 'Maximize Fullscreen'}
+                  >
+                    {jsonModalFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setJsonModalOpen(false)}
+                    className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full cursor-pointer ml-1"
+                    title="Close (Esc)"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => setJsonModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Paste a custom JSON object below. All site pages (Home, About, Projects, Blog, and Resume) will immediately fetch, rehydrate, and render the imported payload.
-            </p>
+              {/* Section Quick Switcher Tabs */}
+              <div className="px-6 py-2.5 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none shrink-0">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">
+                    Target:
+                  </span>
+                  {TARGET_SECTION_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => handleSelectTargetSection(tab.id)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                        jsonTargetSection === tab.id
+                          ? 'bg-sky-600 text-white shadow-xs'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-slate-700/80'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
-            <textarea
-              rows={12}
-              value={jsonInput}
-              onChange={(e) => setJsonInput(e.target.value)}
-              placeholder='{ "profile": { ... }, "projects": [ ... ] }'
-              className="w-full p-4 rounded-2xl bg-slate-900 text-sky-300 font-mono text-xs border border-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-            />
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleReloadLiveTarget}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+                    title="Reload current live portfolio data for this section"
+                  >
+                    <RotateCcw className="w-3 h-3 text-sky-500" />
+                    <span>Reload Live</span>
+                  </button>
 
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-[11px] text-slate-400">Strict JSON formatting required</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setJsonModalOpen(false)}
-                  className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleImportJsonSubmit}
-                  className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
-                >
-                  Apply & Hydrate
-                </button>
+                  <span className="text-slate-300 dark:text-slate-700">•</span>
+
+                  <button
+                    type="button"
+                    onClick={handleLoadSampleForTarget}
+                    className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                  >
+                    Load &quot;{jsonTargetSection === 'auto' ? 'skills' : jsonTargetSection}&quot; sample
+                  </button>
+                </div>
+              </div>
+
+              {/* Target Section Safety Status Bar */}
+              <div className="px-6 py-2 bg-slate-900 border-b border-slate-800/80 flex items-center justify-between text-xs font-mono shrink-0">
+                <div className="flex items-center gap-2">
+                  {jsonTargetSection === 'auto' ? (
+                    <span className="inline-flex items-center gap-1.5 text-sky-400">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Mode: <strong>Smart Auto-Detect</strong> — Snippets and full JSON merge into matching keys without wiping other data.</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>
+                        Target: <strong className="text-white underline">{TARGET_SECTION_TABS.find((t) => t.id === jsonTargetSection)?.sectionName}</strong>. Applying will update <u>ONLY</u> this section. All other sections (Projects, Experiences, Profile, etc.) remain untouched.
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-500">
+                  <span>Live 2-Way State Binding</span>
+                </div>
+              </div>
+
+              {/* Editor Workspace */}
+              <div className="flex-1 p-4 sm:p-6 flex flex-col min-h-0 bg-slate-950">
+                <textarea
+                  value={jsonInput}
+                  onChange={(e) => setJsonInput(e.target.value)}
+                  placeholder={`Paste either full JSON or section snippet here.
+
+Example for "${jsonTargetSection === 'auto' ? 'skills' : jsonTargetSection}":
+${SECTION_SAMPLES[jsonTargetSection === 'auto' ? 'skills' : jsonTargetSection] || '// Paste JSON here'}`}
+                  className="w-full flex-1 p-4 sm:p-6 rounded-2xl bg-slate-900/90 text-sky-300 font-mono text-xs sm:text-sm border border-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/40 resize-none scrollbar-thin leading-relaxed"
+                />
+              </div>
+
+              {/* Command Footer */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-3.5 bg-white dark:bg-[#0f172a] border-t border-slate-100 dark:border-slate-800 gap-3 shrink-0">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>
+                    {jsonTargetSection !== 'auto'
+                      ? `Target focused: Only "${TARGET_SECTION_TABS.find((t) => t.id === jsonTargetSection)?.sectionName}" will be modified on Apply.`
+                      : 'Loose snippets supported (trailing commas auto-stripped). Merges without wiping untouched sections.'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2.5 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setJsonModalOpen(false)}
+                    className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportJsonSubmit}
+                    className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/25 hover:shadow-lg transition-all cursor-pointer hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+                  >
+                    <CheckCheck className="w-4 h-4" />
+                    <span>
+                      {jsonTargetSection !== 'auto'
+                        ? `Apply & Update "${TARGET_SECTION_TABS.find((t) => t.id === jsonTargetSection)?.sectionName}"`
+                        : 'Apply & Rehydrate Portfolio'}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

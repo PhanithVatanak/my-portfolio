@@ -38,22 +38,58 @@ export const developerProfile = {
 
 export const whatIDoItems: WhatIDoItem[] = [
   {
-    id: 'frontend',
-    title: 'Frontend Development',
-    description: 'Crafting responsive and interactive UIs with modern React ecosystems and performance in mind.',
-    icon: 'terminal'
+    id: 'frappe-development',
+    title: 'Frappe Development',
+    description: 'Developing and maintaining custom Frappe applications, workflows, DocTypes, permissions, and business features for business operations.',
+    icon: 'code'
   },
   {
-    id: 'ui-ux',
-    title: 'UI/UX Implementation',
-    description: 'Translating design mockups into pixel-perfect, accessible code that looks great on any device.',
-    icon: 'palette'
+    id: 'backend-api',
+    title: 'Backend & API Development',
+    description: 'Building backend logic, developing REST APIs, handling data validation and authentication, and connecting applications with databases and external services using Python.',
+    icon: 'server'
   },
   {
-    id: 'web-perf',
-    title: 'Web Optimization',
-    description: 'Ensuring fast load times, SEO best practices, and smooth interactions for better user retention.',
-    icon: 'rocket'
+    id: 'database-development',
+    title: 'Database Development',
+    description: 'Designing database queries, managing relational databases, optimizing SQL operations, and handling data migration using MariaDB, MySQL, and PostgreSQL.',
+    icon: 'database'
+  },
+  {
+    id: 'recruitment-systems',
+    title: 'Recruitment System Development',
+    description: 'Developing recruitment features for candidate management, job orders, application workflows, candidate screening, interview scheduling, and recruitment data processing.',
+    icon: 'users'
+  },
+  {
+    id: 'payroll-systems',
+    title: 'HRMS & Payroll Systems',
+    description: 'Supporting and maintaining HR and payroll systems, troubleshooting issues, managing employee data, and improving business workflows related to payroll operations.',
+    icon: 'wallet'
+  },
+  {
+    id: 'ecommerce-development',
+    title: 'E-commerce Development',
+    description: 'Building online shopping experiences with product catalogs, inventory management, shopping carts, order processing, payment workflows, and customer account features.',
+    icon: 'shopping-cart'
+  },
+  {
+    id: 'system-integration',
+    title: 'System Integration & Automation',
+    description: 'Integrating APIs, implementing web push notifications, automating business processes, and connecting systems to improve operational efficiency.',
+    icon: 'workflow'
+  },
+  {
+    id: 'ai-development',
+    title: 'AI & Vector Database Integration',
+    description: 'Exploring AI-powered CV extraction, candidate profile processing, semantic search, and vector database integration using Qdrant.',
+    icon: 'brain-circuit'
+  },
+  {
+    id: 'sql-reporting',
+    title: 'SQL Reporting & Data Management',
+    description: 'Writing complex SQL queries, building business reports, investigating data issues, and preparing structured data to support business operations.',
+    icon: 'chart-no-axes-combined'
   }
 ];
 

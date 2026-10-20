@@ -55,7 +55,7 @@ interface PortfolioDataContextType {
   updateInterests?: (interests: InterestItem[]) => Promise<boolean>;
   updateArticles: (articles: Article[]) => Promise<boolean>;
   resetToDefaults: () => Promise<boolean>;
-  importJson: (jsonString: string) => Promise<{ success: boolean; error?: string }>;
+  importJson: (jsonString: string, targetSection?: string) => Promise<{ success: boolean; section?: string; count?: number; error?: string }>;
   getFormattedJson: () => string;
 }
 
@@ -229,28 +229,124 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
   }, []);
 
   const importJson = useCallback(
-    async (jsonString: string): Promise<{ success: boolean; error?: string }> => {
+    async (
+      jsonString: string,
+      targetSection?: string
+    ): Promise<{ success: boolean; section?: string; count?: number; error?: string }> => {
       try {
-        const parsed = JSON.parse(jsonString);
+        let cleaned = (jsonString || '').trim();
+        if (!cleaned) {
+          return { success: false, error: 'JSON payload is empty' };
+        }
+
+        // 1. Remove trailing comma at the very end of the string
+        cleaned = cleaned.replace(/,\s*$/, '');
+
+        // 2. Loose snippet repair: if it starts with a key without outer braces, e.g. "whatIDo": [ ... ]
+        if (/^\s*"[a-zA-Z0-9_-]+"\s*:\s*[\[{]/.test(cleaned) && !cleaned.startsWith('{')) {
+          cleaned = `{${cleaned}}`;
+        }
+
+        // 3. Remove trailing commas before closing braces/brackets (e.g. { "a": 1, })
+        cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+
+        let parsed: any;
+        try {
+          parsed = JSON.parse(cleaned);
+        } catch (jsonErr: any) {
+          return { success: false, error: `Invalid JSON syntax: ${jsonErr.message}` };
+        }
+
+        // 4. Handle raw array payload e.g. [ { "id": "...", ... } ]
+        if (Array.isArray(parsed)) {
+          let section = targetSection;
+          if (!section || section === 'auto') {
+            const first = parsed[0] || {};
+            if ('period' in first && 'company' in first) {
+              section = 'experiences';
+            } else if ('category' in first && 'image' in first) {
+              section = 'projects';
+            } else if ('degree' in first || 'institution' in first) {
+              section = 'education';
+            } else if ('language' in first && 'proficiency' in first) {
+              section = 'languages';
+            } else if ('skills' in first && ('category' in first || 'title' in first || Array.isArray(first.skills))) {
+              section = 'skills';
+            } else if ('content' in first && 'slug' in first) {
+              section = 'articles';
+            } else if ('title' in first && ('icon' in first || 'description' in first)) {
+              section = 'whatIDo';
+            } else {
+              section = 'whatIDo';
+            }
+          }
+          parsed = { [section]: parsed };
+        }
+
         if (!parsed || typeof parsed !== 'object') {
-          return { success: false, error: 'JSON payload must be a valid object' };
+          return { success: false, error: 'Parsed JSON is not an object or array' };
         }
-        if (!parsed.profile || !parsed.projects) {
-          return { success: false, error: 'JSON must include at least profile and projects objects' };
+
+        // 5. Determine which section(s) are being updated
+        const validKeys = [
+          'profile',
+          'whatIDo',
+          'projects',
+          'experiences',
+          'education',
+          'languages',
+          'skills',
+          'interests',
+          'articles',
+          'telemetry'
+        ];
+
+        let keys = Object.keys(parsed);
+        let recognizedKeys = keys.filter((k) => validKeys.includes(k));
+
+        // If user explicitly chose a target section and the payload is an unwrapped object (e.g. raw profile or single object)
+        if (recognizedKeys.length === 0 && targetSection && targetSection !== 'auto' && validKeys.includes(targetSection)) {
+          parsed = { [targetSection]: parsed };
+          keys = Object.keys(parsed);
+          recognizedKeys = [targetSection];
         }
-        const full: PortfolioData = {
-          ...defaultPortfolioData,
+
+        if (recognizedKeys.length === 0) {
+          return {
+            success: false,
+            error: `Unrecognized payload structure. Expected one of: ${validKeys.join(', ')}`
+          };
+        }
+
+        // 6. Merge with current live data
+        const merged: PortfolioData = {
+          ...data,
           ...parsed,
-          profile: { ...defaultPortfolioData.profile, ...parsed.profile },
+          profile: parsed.profile ? { ...data.profile, ...parsed.profile } : data.profile,
         };
-        await commitData(full);
-        return { success: true };
+
+        await commitData(merged);
+
+        let sectionSummary = recognizedKeys.join(', ');
+        let count: number | undefined = undefined;
+        if (recognizedKeys.length === 1) {
+          const singleVal = parsed[recognizedKeys[0]];
+          if (Array.isArray(singleVal)) {
+            count = singleVal.length;
+          }
+        }
+
+        return {
+          success: true,
+          section: sectionSummary,
+          count
+        };
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Invalid JSON format';
         return { success: false, error: msg };
       }
     },
-    [commitData]
+    [data, commitData]
   );
 
   const getFormattedJson = useCallback(() => {
