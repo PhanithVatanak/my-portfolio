@@ -54,11 +54,11 @@ export default function AboutPage() {
             </div>
 
             <h2 className="text-3xl md:text-4xl font-extrabold font-display text-slate-900 dark:text-slate-50 mb-4 tracking-tight">
-              Looking for a Senior Frontend Architect?
+              Looking for a Dedicated Web Developer?
             </h2>
 
             <p className="text-slate-600 dark:text-slate-300 mb-8 text-base md:text-lg leading-relaxed font-body">
-              Whether you are scaling a modern Next.js 15 application, modernizing a legacy frontend, or building high-frequency user interfaces from scratch, I&apos;d love to connect.
+              Whether you are developing enterprise business applications, Frappe &amp; Python backends, database systems, or modern responsive web interfaces, I&apos;d love to connect.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3.5">

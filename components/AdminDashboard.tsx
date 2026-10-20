@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
@@ -33,6 +33,8 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Menu,
   Send,
   Github,
@@ -1082,6 +1084,61 @@ export function AdminDashboard() {
       showToast(`Import failed: ${result.error}`, 'error');
     }
   };
+
+  const targetTabsScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollTargets = (direction: 'left' | 'right') => {
+    if (targetTabsScrollRef.current) {
+      targetTabsScrollRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Prevent background page from scrolling when JSON modal or editor modals are open
+  useEffect(() => {
+    const isModalActive = jsonModalOpen || Boolean(editingEdu) || Boolean(editingExp);
+    if (!isModalActive) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [jsonModalOpen, editingEdu, editingExp]);
+
+  // Handle smooth mouse-wheel horizontal scrolling over the Target tabs and block background scroll bleed
+  useEffect(() => {
+    if (!jsonModalOpen) return;
+    const el = targetTabsScrollRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0 || e.deltaX !== 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        el.scrollBy({
+          left: delta,
+          behavior: 'auto',
+        });
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+    };
+  }, [jsonModalOpen]);
 
   // Close JSON modal or exit fullscreen on Escape key
   useEffect(() => {
@@ -3512,10 +3569,10 @@ export function AdminDashboard() {
             }}
             className={`fixed inset-0 z-[9999] flex items-center justify-center ${
               jsonModalFullscreen ? 'p-0' : 'p-2 sm:p-4 md:p-6'
-            } bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-150`}
+            } bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-150 overscroll-contain`}
           >
             <div
-              className={`bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-2xl relative flex flex-col overflow-hidden transition-all duration-200 ${
+              className={`bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-2xl relative flex flex-col overflow-hidden transition-all duration-200 overscroll-contain ${
                 jsonModalFullscreen
                   ? 'w-screen h-screen max-w-none max-h-none rounded-none'
                   : 'w-[96vw] max-w-6xl h-[92vh] max-h-[94vh] rounded-3xl'
@@ -3600,9 +3657,23 @@ export function AdminDashboard() {
               </div>
 
               {/* Section Quick Switcher Tabs */}
-              <div className="px-6 py-2.5 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none shrink-0">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">
+              <div className="px-3 sm:px-6 py-2.5 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 sm:gap-3 shrink-0 overscroll-contain">
+                {/* Left scroll chevron button */}
+                <button
+                  type="button"
+                  onClick={() => scrollTargets('left')}
+                  className="hidden sm:flex p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 shrink-0 cursor-pointer transition-colors"
+                  title="Scroll targets left"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Horizontal scrollable targets with dedicated mouse wheel listener */}
+                <div
+                  ref={targetTabsScrollRef}
+                  className="flex items-center gap-1.5 text-xs overflow-x-auto scrollbar-none py-1 flex-1 min-w-0 overscroll-contain select-none"
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline shrink-0">
                     Target:
                   </span>
                   {TARGET_SECTION_TABS.map((tab) => (
@@ -3610,7 +3681,7 @@ export function AdminDashboard() {
                       key={tab.id}
                       type="button"
                       onClick={() => handleSelectTargetSection(tab.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                         jsonTargetSection === tab.id
                           ? 'bg-sky-600 text-white shadow-xs'
                           : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-slate-700/80'
@@ -3621,15 +3692,26 @@ export function AdminDashboard() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Right scroll chevron button */}
+                <button
+                  type="button"
+                  onClick={() => scrollTargets('right')}
+                  className="hidden sm:flex p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 shrink-0 cursor-pointer transition-colors"
+                  title="Scroll targets right"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                {/* Right action buttons pinned */}
+                <div className="flex items-center gap-2 shrink-0 pl-1.5 border-l border-slate-200 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={handleReloadLiveTarget}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer whitespace-nowrap"
                     title="Reload current live portfolio data for this section"
                   >
                     <RotateCcw className="w-3 h-3 text-sky-500" />
-                    <span>Reload Live</span>
+                    <span className="hidden md:inline">Reload Live</span>
                   </button>
 
                   <span className="text-slate-300 dark:text-slate-700">•</span>
@@ -3637,9 +3719,9 @@ export function AdminDashboard() {
                   <button
                     type="button"
                     onClick={handleLoadSampleForTarget}
-                    className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                    className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer whitespace-nowrap"
                   >
-                    Load &quot;{jsonTargetSection === 'auto' ? 'skills' : jsonTargetSection}&quot; sample
+                    Sample
                   </button>
                 </div>
               </div>
