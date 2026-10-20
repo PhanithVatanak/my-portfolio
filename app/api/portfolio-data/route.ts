@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { portfolioDb } from '@/lib/data';
+import { getPortfolioFromDb, savePortfolioToDb, resetPortfolioInDb, isTursoConfigured } from '@/lib/turso';
 import { PortfolioData } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const data = portfolioDb.getData();
+    const { data, source } = await getPortfolioFromDb();
     return NextResponse.json({
       success: true,
       data,
+      source,
+      tursoConfigured: isTursoConfigured(),
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -30,12 +34,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const updatedData = portfolioDb.updateData(body as Partial<PortfolioData>);
+    const updatedData = await savePortfolioToDb(body as Partial<PortfolioData>);
 
     return NextResponse.json({
       success: true,
       message: 'Portfolio data synchronized successfully',
       data: updatedData,
+      tursoConfigured: isTursoConfigured(),
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -49,11 +54,12 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   try {
-    const resetData = portfolioDb.resetData();
+    const resetData = await resetPortfolioInDb();
     return NextResponse.json({
       success: true,
       message: 'Portfolio data reset to factory defaults',
       data: resetData,
+      tursoConfigured: isTursoConfigured(),
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

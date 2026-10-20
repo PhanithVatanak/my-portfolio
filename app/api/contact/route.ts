@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { portfolioDb } from '@/lib/data';
+import { saveContactMessageToDb } from '@/lib/turso';
 
 // Helper for email validation
 function isValidEmail(email: string): boolean {
@@ -53,6 +54,11 @@ export async function POST(req: NextRequest) {
 
     // Persist to database
     const savedMessage = portfolioDb.addMessage(name.trim(), email.trim(), message.trim());
+    try {
+      await saveContactMessageToDb(savedMessage);
+    } catch (e) {
+      console.warn('Could not save to Turso contact_messages:', e);
+    }
 
     return NextResponse.json(
       {

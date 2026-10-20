@@ -2,12 +2,12 @@ import { Project, Experience, SkillCategory, WhatIDoItem, InterestItem, Educatio
 
 export const developerProfile = {
   name: 'Sun Phanith Vatanak',
-  shortName: 'Phanith',
+  shortName: 'Phanith Vatanak',
   initials: 'SPV',
   brandName: 'SPV Portfolio',
-  role: 'Web Developer & Senior Systems Architect',
+  role: 'Web Application Developer',
   location: 'Phnom Penh, Cambodia',
-  email: 'sun.phanith.vatanak@example.com',
+  email: 'phanith.vatanak@gmail.com',
   isAvailableForHire: true,
   avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD2Wvq-xz7PqYbYaX496x-EiUQZVQCIkuMGqAU-DbnDg3lRFTaoT5iFH5SV8040Fxjbr3ZjDWVK3CY1E4kEIA5rFGBbK_USlaG0_rHIbKseJL7jX_yiBB65Q9V5-VTWWF04Rbte1aAfM0Kk7RJR00p2qIBjII_tOEhph9fAvUwRp24jvsYDNE3mhPneuEF3j3qXLXQ_s5U3s_-UpynPCALAuJThtNGUs76oJfc8vRX12KS5Uzh4k7HBAJxEDQwG3oIBfg9PJy99vkk',
   tagline: "Let's build something together.",
@@ -38,98 +38,178 @@ export const developerProfile = {
 
 export const whatIDoItems: WhatIDoItem[] = [
   {
-    id: 'frappe-development',
-    title: 'Frappe Development',
-    description: 'Developing and maintaining custom Frappe applications, workflows, DocTypes, permissions, and business features for business operations.',
-    icon: 'code'
+    "id": "frappe-development",
+    "title": "Frappe Development",
+    "description": "Developing and maintaining custom Frappe applications, workflows, DocTypes, permissions, and business features for business operations.",
+    "icon": "code"
   },
   {
-    id: 'backend-api',
-    title: 'Backend & API Development',
-    description: 'Building backend logic, developing REST APIs, handling data validation and authentication, and connecting applications with databases and external services using Python.',
-    icon: 'server'
+    "id": "backend-api",
+    "title": "Backend & API Development",
+    "description": "Building backend logic, developing REST APIs, handling data validation and authentication, and connecting applications with databases and external services using Python.",
+    "icon": "server"
   },
   {
-    id: 'database-development',
-    title: 'Database Development',
-    description: 'Designing database queries, managing relational databases, optimizing SQL operations, and handling data migration using MariaDB, MySQL, and PostgreSQL.',
-    icon: 'database'
+    "id": "database-development",
+    "title": "Database Development",
+    "description": "Designing database queries, managing relational databases, optimizing SQL operations, and handling data migration using MariaDB, MySQL, and PostgreSQL.",
+    "icon": "database"
   },
   {
-    id: 'recruitment-systems',
-    title: 'Recruitment System Development',
-    description: 'Developing recruitment features for candidate management, job orders, application workflows, candidate screening, interview scheduling, and recruitment data processing.',
-    icon: 'users'
+    "id": "recruitment-systems",
+    "title": "Recruitment System Development",
+    "description": "Developing recruitment features for candidate management, job orders, application workflows, candidate screening, interview scheduling, and recruitment data processing.",
+    "icon": "users"
   },
   {
-    id: 'payroll-systems',
-    title: 'HRMS & Payroll Systems',
-    description: 'Supporting and maintaining HR and payroll systems, troubleshooting issues, managing employee data, and improving business workflows related to payroll operations.',
-    icon: 'wallet'
+    "id": "payroll-systems",
+    "title": "HRMS & Payroll Systems",
+    "description": "Supporting and maintaining HR and payroll systems, troubleshooting issues, managing employee data, and improving business workflows related to payroll operations.",
+    "icon": "wallet"
   },
   {
-    id: 'ecommerce-development',
-    title: 'E-commerce Development',
-    description: 'Building online shopping experiences with product catalogs, inventory management, shopping carts, order processing, payment workflows, and customer account features.',
-    icon: 'shopping-cart'
+    "id": "ecommerce-development",
+    "title": "E-commerce Development",
+    "description": "Building online shopping experiences with product catalogs, inventory management, shopping carts, order processing, payment workflows, and customer account features.",
+    "icon": "shopping-cart"
   },
   {
-    id: 'system-integration',
-    title: 'System Integration & Automation',
-    description: 'Integrating APIs, implementing web push notifications, automating business processes, and connecting systems to improve operational efficiency.',
-    icon: 'workflow'
+    "id": "system-integration",
+    "title": "System Integration & Automation",
+    "description": "Integrating APIs, implementing web push notifications, automating business processes, and connecting systems to improve operational efficiency.",
+    "icon": "workflow"
   },
   {
-    id: 'ai-development',
-    title: 'AI & Vector Database Integration',
-    description: 'Exploring AI-powered CV extraction, candidate profile processing, semantic search, and vector database integration using Qdrant.',
-    icon: 'brain-circuit'
+    "id": "ai-development",
+    "title": "AI & Vector Database Integration",
+    "description": "Exploring AI-powered CV extraction, candidate profile processing, semantic search, and vector database integration using Qdrant.",
+    "icon": "brain-circuit"
   },
   {
-    id: 'sql-reporting',
-    title: 'SQL Reporting & Data Management',
-    description: 'Writing complex SQL queries, building business reports, investigating data issues, and preparing structured data to support business operations.',
-    icon: 'chart-no-axes-combined'
+    "id": "sql-reporting",
+    "title": "SQL Reporting & Data Management",
+    "description": "Writing complex SQL queries, building business reports, investigating data issues, and preparing structured data to support business operations.",
+    "icon": "chart-no-axes-combined"
   }
 ];
 
 export const experiences: Experience[] = [
   {
-    id: 'exp-1',
-    role: 'Senior Frontend Developer',
-    company: 'Tech Solutions Cambodia',
-    period: '2022 - PRESENT',
-    status: 'Current Role',
-    description: "Leading the frontend team in rebuilding the company's core product using Next.js 14 & 15. Improved site performance by 40% and established a comprehensive design system. Mentored junior developers and implemented rigorous code review processes.",
-    technologies: ['Next.js 15', 'TypeScript', 'Tailwind CSS', 'Redux Toolkit', 'Jest', 'Vercel'],
-    highlights: [
-      'Engineered streaming SSR architecture reducing TTFB from 380ms to 42ms',
-      'Unified component library across 4 distributed enterprise web apps',
-      'Spearheaded performance optimization boosting Lighthouse scores to 98+'
+    "id": "exp-1",
+    "role": "Web Developer",
+    "company": "HRINC (Cambodia) Co., Ltd",
+    "period": "Jan 2025 - Present",
+    "status": "Current Role",
+    "description": "Developing and maintaining business applications using the Frappe Framework, with a focus on the Recruitment Management System (RMS), HRMS, and payroll-related systems. Working on custom application features, backend logic, database operations, system integrations, user permissions, and AI-assisted recruitment functionality.",
+    "technologies": [
+      "Frappe Framework",
+      "Python",
+      "JavaScript",
+      "SQL",
+      "MariaDB",
+      "ERPNext",
+      "HRMS",
+      "Firebase Cloud Messaging",
+      "Qdrant"
+    ],
+    "highlights": [
+      "Develop and maintain custom recruitment features for candidate management, job orders, application processing, screening, and interview scheduling",
+      "Implement role-based permissions and access control to manage user access to recruitment data and system features",
+      "Develop AI-assisted CV extraction and candidate profile processing workflows",
+      "Work on candidate data synchronization and vector database integration with Qdrant",
+      "Develop and troubleshoot web push notifications and real-time notification features using Firebase Cloud Messaging",
+      "Support HRMS and payroll systems, troubleshoot application issues, and maintain business workflows",
+      "Write and optimize SQL queries for data retrieval, reporting, and database troubleshooting"
     ]
   },
   {
-    id: 'exp-2',
-    role: 'Web Developer',
-    company: 'Digital Creative Agency',
-    period: '2020 - 2022',
-    description: 'Collaborated with designers to deliver high-quality marketing websites for international clients. Utilized React and Tailwind CSS to create responsive layouts. Managed multiple projects simultaneously while maintaining strict deadlines.',
-    technologies: ['React', 'Tailwind CSS', 'GraphQL', 'Next.js', 'Figma', 'Framer Motion'],
-    highlights: [
-      'Shipped 18 client production deployments on tight release timelines',
-      'Introduced micro-interaction pipelines yielding a 26% bump in user dwell time'
+    "id": "exp-2",
+    "role": "Junior Web Developer",
+    "company": "HRINC (Cambodia) Co., Ltd",
+    "period": "Mar 2023 - Jan 2025",
+    "description": "Contributed to the development and maintenance of web applications, supporting recruitment system features, database operations, and business requirements. Worked on application interfaces, existing functionality, SQL queries, troubleshooting, and technical improvements while building practical experience in web development.",
+    "technologies": [
+      "HTML5",
+      "CSS3",
+      "JavaScript",
+      "SQL",
+      "Python",
+      "Web Development",
+      "Database Management"
+    ],
+    "highlights": [
+      "Develop and maintain web application features based on business requirements",
+      "Support recruitment system functionality and improvements to candidate-related workflows",
+      "Build and update application interfaces using HTML, CSS, and JavaScript",
+      "Write SQL queries to retrieve, validate, and manage application data",
+      "Investigate application errors and resolve technical issues",
+      "Assist with database maintenance, data migration, testing, and system support"
     ]
   },
   {
-    id: 'exp-3',
-    role: 'Freelance Developer',
-    company: 'Self-Employed',
-    period: '2018 - 2020',
-    description: 'Started my journey building custom WordPress themes and small business websites. Gained proficiency in HTML, CSS, JavaScript, and PHP. Learned the fundamentals of client communication and project management.',
-    technologies: ['JavaScript', 'HTML5', 'CSS3', 'PHP', 'WordPress', 'MySQL'],
-    highlights: [
-      'Delivered bespoke web portals for over 25 Southeast Asian local businesses',
-      'Mastered fundamentals of full-stack data flow, SEO indexing, and cross-browser styling'
+    "id": "exp-3",
+    "role": "Web Developer Intern",
+    "company": "HRINC (Cambodia) Co., Ltd",
+    "period": "Dec 2022 - Mar 2023",
+    "description": "Gained practical experience in web development by assisting with application maintenance, basic feature implementation, testing, and troubleshooting. Learned the company's development practices and worked with web technologies to build a foundation for further development responsibilities.",
+    "technologies": [
+      "HTML5",
+      "CSS3",
+      "JavaScript",
+      "SQL",
+      "Web Development",
+      "Application Testing"
+    ],
+    "highlights": [
+      "Assist with website and web application maintenance",
+      "Implement basic interface updates and frontend improvements",
+      "Help test application functionality and identify software issues",
+      "Support troubleshooting and bug fixing for existing features",
+      "Build foundational skills in web development, programming, and database operations"
+    ]
+  },
+  {
+    "id": "exp-4",
+    "role": "Database Developer",
+    "company": "Norton University",
+    "period": "Dec 2021 - Dec 2022",
+    "description": "Worked on database-related development and application functionality using Microsoft SQL Server and Visual Basic .NET. Focused on SQL queries, data management, database operations, and troubleshooting to support data-driven applications and daily operational requirements.",
+    "technologies": [
+      "Microsoft SQL Server",
+      "T-SQL",
+      "Visual Basic .NET",
+      "Database Development",
+      "SQL Queries",
+      "Data Management"
+    ],
+    "highlights": [
+      "Write and maintain SQL queries for data retrieval and database operations",
+      "Work with Microsoft SQL Server to manage and maintain application data",
+      "Develop and maintain database-related application functionality using Visual Basic .NET",
+      "Troubleshoot data inconsistencies and database-related issues",
+      "Support data processing and improve the reliability of database operations"
+    ]
+  },
+  {
+    "id": "exp-5",
+    "role": "IT Technician",
+    "company": "Norton University",
+    "period": "Jul 2021 - Dec 2021",
+    "description": "Provided technical support for computers, software, and IT equipment. Assisted users with technical issues, performed hardware and software troubleshooting, and supported routine IT operations to help maintain a reliable working environment.",
+    "technologies": [
+      "IT Support",
+      "Technical Troubleshooting",
+      "Windows",
+      "Computer Hardware",
+      "Software Installation",
+      "System Maintenance"
+    ],
+    "highlights": [
+      "Troubleshoot computer hardware, software, and operating system issues",
+      "Assist users with technical problems and IT support requests",
+      "Support software installation, configuration, and basic system maintenance",
+      "Help maintain computer equipment and workplace IT systems",
+      "Identify and resolve routine technical issues affecting daily operations"
     ]
   }
 ];
@@ -167,33 +247,66 @@ export const personalInterests: InterestItem[] = [
 
 export const educationList: EducationItem[] = [
   {
-    id: 'edu-1',
-    degree: 'Bachelor of Computer Science & Software Engineering',
-    institution: 'Royal University of Phnom Penh (RUPP)',
-    location: 'Phnom Penh, Cambodia',
-    period: '2016 - 2020',
-    honors: 'Graduated with Honors (GPA 3.85 / 4.0)',
-    description: 'Specialized in Software Engineering, Distributed Systems, Data Structures & Algorithms, and Modern Web Architectures. President of the University Web Engineering Circle.',
-    coursework: [
-      'Data Structures & Algorithms',
-      'Distributed Systems Architecture',
-      'Database Systems & Query Optimization',
-      'Software Testing & CI/CD Pipelines',
-      'Human-Computer Interaction (HCI)'
+    "id": "edu-1",
+    "degree": "Bachelor Degree of Computer Science",
+    "institution": "Norton University",
+    "location": "Phnom Penh, Cambodia",
+    "period": "2020 - 2024",
+    "honors": "Graduated with Honors (GPA 3.85 / 4.0)",
+    "description": "Specialized in Computer Science, software development, database systems, and web technologies.",
+    "coursework": [
+      "Data Structures & Algorithms",
+      "Distributed Systems Architecture",
+      "Database Systems & Query Optimization",
+      "Software Testing & CI/CD Pipelines",
+      "Human-Computer Interaction (HCI)"
     ]
   },
   {
-    id: 'edu-2',
-    degree: 'Advanced Web Architecture & Cloud Systems Specialist',
-    institution: 'AWS Academy & Modern Web Engineering Guild',
-    location: 'Online Accreditation',
-    period: '2021',
-    honors: 'Certified Cloud Solutions & Performance Specialist',
-    description: 'Specialized accreditation covering edge computing, WebGL & compute shaders, React Server Components streaming, and distributed micro-frontends.',
-    coursework: [
-      'Edge Compute Architecture',
-      'Serverless Microservices',
-      'Performance Optimization & Web Vitals'
+    "id": "edu-2",
+    "degree": "Grade 12",
+    "institution": "Chompuvon High School",
+    "location": "Phnom Penh, Cambodia",
+    "period": "2020",
+    "honors": "",
+    "description": "",
+    "coursework": []
+  },
+  {
+    "id": "edu-3",
+    "degree": "Web Development Course",
+    "institution": "Udemy",
+    "location": "Online",
+    "period": "Jul 2020",
+    "honors": "",
+    "description": "Completed online learning in web development to build foundational knowledge of website development and web technologies.",
+    "coursework": [
+      "Web Development"
+    ]
+  },
+  {
+    "id": "edu-4",
+    "degree": "English Short Course",
+    "institution": "ACE (Australian Centre for Education)",
+    "location": "Cambodia",
+    "period": "Jul 2020",
+    "honors": "",
+    "description": "Completed an English language short course to develop English communication skills.",
+    "coursework": [
+      "English Language",
+      "Communication Skills"
+    ]
+  },
+  {
+    "id": "edu-5",
+    "degree": "English Language Studies",
+    "institution": "DPSS (Developing Potential for Success School)",
+    "location": "Cambodia",
+    "period": "Jan 2017",
+    "honors": "",
+    "description": "Studied English to develop language proficiency and communication skills.",
+    "coursework": [
+      "English Language"
     ]
   }
 ];
