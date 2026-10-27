@@ -249,7 +249,7 @@ export async function getTechRadarFromDb(): Promise<TechRadarItem[]> {
       category: row.category as string,
       proficiency: row.proficiency as any,
       experienceYears: row.experienceYears as string,
-      showOnHome: Boolean(row.showOnHome === 1 || row.showOnHome === '1' || row.showOnHome === true),
+      showOnHome: Number(row.showOnHome) === 1 || String(row.showOnHome) === 'true',
       tags: row.tags ? (row.tags as string).split('||').filter(Boolean) : [],
     }));
   } catch (err) {
