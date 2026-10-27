@@ -83,39 +83,54 @@ function normalizeDataSlugs(pData: PortfolioData): PortfolioData {
 const PortfolioDataContext = createContext<PortfolioDataContextType | undefined>(undefined);
 
 export function PortfolioDataProvider({ children }: { children: React.ReactNode }) {
-  // Lazy initialize state from localStorage if available
-  const [data, setData] = useState<PortfolioData>(() => {
-    if (typeof window === 'undefined') return defaultPortfolioData;
+  // Initialize state with defaultPortfolioData so server and client initial render match 100%
+  const [data, setData] = useState<PortfolioData>(defaultPortfolioData);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  // Hydrate from localStorage and sync with API after mount
+  useEffect(() => {
+    let active = true;
+
+    // Immediately rehydrate local cache if available on client
     try {
       const cached = localStorage.getItem('spv_portfolio_live_data');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
-          return normalizeDataSlugs({ ...defaultPortfolioData, ...parsed });
+          setData(normalizeDataSlugs({ ...defaultPortfolioData, ...parsed }));
         }
       }
     } catch {
-      // fallback
+      // ignore
     }
-    return defaultPortfolioData;
-  });
-
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-
-  // Sync with API on initial load
-  useEffect(() => {
-    let active = true;
 
     fetch('/api/portfolio-data')
       .then((res) => res.json())
       .then((resData) => {
         if (active && resData.success && resData.data) {
-          const normalized = normalizeDataSlugs(resData.data);
-          setData(normalized);
+          const serverNormalized = normalizeDataSlugs(resData.data);
+          setData((prev) => {
+            if (resData.source === 'static' && prev.profile?.avatarUrl && prev.profile.avatarUrl !== defaultPortfolioData.profile.avatarUrl) {
+              const mergedWithLocal = {
+                ...serverNormalized,
+                profile: {
+                  ...serverNormalized.profile,
+                  ...prev.profile,
+                },
+              };
+              fetch('/api/portfolio-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mergedWithLocal),
+              }).catch(() => {});
+              return mergedWithLocal;
+            }
+            return serverNormalized;
+          });
           setLastUpdated(resData.timestamp || new Date().toISOString());
           try {
-            localStorage.setItem('spv_portfolio_live_data', JSON.stringify(normalized));
+            localStorage.setItem('spv_portfolio_live_data', JSON.stringify(serverNormalized));
           } catch {
             // storage quota
           }

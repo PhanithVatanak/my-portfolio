@@ -19,9 +19,11 @@ import {
   X
 } from 'lucide-react';
 import { Article } from '@/lib/types';
+import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from './ToastContext';
 import { usePortfolioData } from '@/components/PortfolioDataContext';
 import { PARENT_CATEGORIES, getSubcategoriesForParent, detectParentCategory } from '@/lib/categories';
+import { triggerNavAnimation } from '@/components/PageTransition';
 
 export function BlogShowcase() {
   const { data } = usePortfolioData();
@@ -216,7 +218,7 @@ export function BlogShowcase() {
                       setSelectedParent(cat);
                       setSelectedSub('All');
                     }}
-                    className={`group px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 cursor-pointer transition-all duration-200 ease-out select-none hover:-translate-y-0.5 ${
+                    className={`group px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 cursor-pointer transition-all duration-200 ease-out select-none click-bounce hover:-translate-y-0.5 ${
                       isSelected
                         ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/30 border border-transparent'
                         : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-500/40 hover:bg-sky-50/80 dark:hover:bg-slate-800/90 hover:text-sky-600 shadow-2xs'
@@ -224,7 +226,7 @@ export function BlogShowcase() {
                   >
                     <span>{cat}</span>
                     <span
-                      className={`text-[10px] min-w-[18px] px-1.5 py-0.5 rounded-full font-mono font-semibold flex items-center justify-center ${
+                      className={`text-[10px] min-w-[18px] px-1.5 py-0.5 rounded-full font-mono font-semibold flex items-center justify-center transition-colors ${
                         isSelected
                           ? 'bg-white/20 text-white'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
@@ -252,7 +254,7 @@ export function BlogShowcase() {
                     <button
                       key={sub}
                       onClick={() => setSelectedSub(sub)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer click-bounce ${
                         isSelected
                           ? 'bg-sky-600 text-white shadow-2xs'
                           : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-sky-600 hover:bg-sky-100/70 border border-slate-200 dark:border-slate-700'
@@ -270,10 +272,12 @@ export function BlogShowcase() {
 
       {/* Featured Research Hero Card */}
       {featuredArticle && (
-        <Link
-          href={`/blog/${featuredArticle.id}`}
-          className="block relative rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-sky-100 dark:border-slate-800 p-6 md:p-10 shadow-xl overflow-hidden group hover:border-sky-300 dark:hover:border-slate-700 transition-all cursor-pointer"
+        <div
+          className="relative rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-sky-100 dark:border-slate-800 p-6 md:p-10 shadow-sm hover:shadow-xl hover:shadow-sky-500/10 dark:hover:shadow-sky-950/30 hover:border-sky-300 dark:hover:border-sky-500/40 transition-all group hover:-translate-y-1 duration-500 ease-out overflow-hidden"
         >
+          {/* Subtle top scanline pulse on hover */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-sky-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
           <div className="absolute -top-32 -right-32 w-96 h-96 bg-sky-200/40 dark:bg-sky-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
@@ -299,7 +303,7 @@ export function BlogShowcase() {
                   </span>
                 </div>
 
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors font-display">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors duration-500 font-display">
                   {featuredArticle.title}
                 </h2>
 
@@ -309,16 +313,25 @@ export function BlogShowcase() {
               </div>
 
               <div className="flex items-center gap-3 pt-2">
-                <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all">
+                <Link
+                  href={`/blog/${featuredArticle.id}`}
+                  onClick={() => triggerNavAnimation(`/blog/${featuredArticle.id}`)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all duration-300 click-bounce cursor-pointer group/btn"
+                >
                   <span>Open Full Guideline</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </span>
+                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                </Link>
 
                 {featuredArticle.forumUrl && (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <a
+                    href={featuredArticle.forumUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
                     <MessageSquare className="w-3.5 h-3.5 text-sky-500" />
                     <span>discuss.frappe.io</span>
-                  </span>
+                  </a>
                 )}
               </div>
             </div>
@@ -326,7 +339,7 @@ export function BlogShowcase() {
             {/* Code Snippet Box (Right) */}
             <div className="lg:col-span-5 w-full">
               {featuredArticle.codeSnippet && (
-                <div className="rounded-2xl bg-slate-950 p-4 border border-slate-800 shadow-2xl relative overflow-hidden text-xs font-mono text-slate-200 group-hover:border-sky-500/40 transition-colors">
+                <div className="rounded-2xl bg-slate-950 p-4 border border-slate-800 shadow-2xl relative overflow-hidden text-xs font-mono text-slate-200 group-hover:border-sky-500/40 transition-colors duration-500">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-[11px] text-slate-400">
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1.5">
@@ -349,7 +362,7 @@ export function BlogShowcase() {
               )}
             </div>
           </div>
-        </Link>
+        </div>
       )}
 
       {/* Grid of Filtered Field Notes */}
@@ -366,7 +379,13 @@ export function BlogShowcase() {
         </div>
 
         {filteredArticles.length === 0 ? (
-          <div className="text-center py-16 bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-sky-100 dark:border-slate-800 p-8 shadow-sm">
+          <motion.div
+            key="empty-articles"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="text-center py-16 bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-sky-100 dark:border-slate-800 p-8 shadow-sm"
+          >
             <BookOpen className="w-8 h-8 text-sky-500 mx-auto mb-3" />
             <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">No articles found</h4>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-4">
@@ -374,11 +393,11 @@ export function BlogShowcase() {
             </p>
             <button
               onClick={clearAllFilters}
-              className="px-4 py-2 rounded-full bg-sky-600 text-white font-semibold text-xs shadow-md hover:bg-sky-500 cursor-pointer"
+              className="px-4 py-2 rounded-full bg-sky-600 text-white font-semibold text-xs shadow-md hover:bg-sky-500 cursor-pointer click-bounce"
             >
               Reset Filters
             </button>
-          </div>
+          </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredArticles.map((article) => {
@@ -387,11 +406,19 @@ export function BlogShowcase() {
               const artSub = article.subCategory || article.category;
 
               return (
-                <Link
-                  key={article.id}
-                  href={`/blog/${article.id}`}
-                  className="flex flex-col justify-between rounded-2xl bg-white dark:bg-slate-900 p-6 border border-sky-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-sky-500/10 hover:border-sky-300 dark:hover:border-slate-700 transition-all duration-300 group cursor-pointer"
+                <motion.div
+                  key={`${selectedParent}-${selectedSub}-${article.id}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{
+                    duration: 0.8, // 800ms pure fade in as requested
+                    ease: 'easeOut',
+                  }}
+                  className="flex flex-col justify-between h-full rounded-2xl border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm hover:shadow-xl hover:shadow-sky-500/10 dark:hover:shadow-sky-950/30 hover:border-sky-300 dark:hover:border-sky-500/40 transition-all group hover:-translate-y-1 duration-500 ease-out relative overflow-hidden"
                 >
+                  {/* Subtle top scanline pulse on hover */}
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-sky-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -415,7 +442,7 @@ export function BlogShowcase() {
                         type="button"
                         onClick={(e) => toggleBookmark(article.id, e)}
                         aria-label="Bookmark article"
-                        className={`p-1 transition-colors ${
+                        className={`p-1 transition-colors click-bounce cursor-pointer ${
                           isBookmarked ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 hover:text-sky-600'
                         }`}
                       >
@@ -432,7 +459,7 @@ export function BlogShowcase() {
                       </span>
                     </div>
 
-                    <h4 className="text-base font-bold font-display text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-2">
+                    <h4 className="text-base font-bold font-display text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors duration-500 line-clamp-2">
                       {article.title}
                     </h4>
 
@@ -449,12 +476,17 @@ export function BlogShowcase() {
                         </span>
                       )}
                     </div>
-                    <span className="inline-flex items-center gap-1 font-semibold text-sky-600 dark:text-sky-400 group-hover:translate-x-0.5 transition-transform">
+                    {/* ONLY 'Read Guide' is clickable to view blog details */}
+                    <Link
+                      href={`/blog/${article.id}`}
+                      onClick={() => triggerNavAnimation(`/blog/${article.id}`)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-xs text-sky-600 dark:text-sky-400 hover:text-white hover:bg-sky-600 dark:hover:bg-sky-500 bg-sky-50 dark:bg-sky-500/10 border border-sky-200/80 dark:border-sky-500/20 transition-all duration-300 click-bounce cursor-pointer group/btn"
+                    >
                       <span>Read Guide</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-300" />
+                    </Link>
                   </div>
-                </Link>
+                </motion.div>
               );
             })}
           </div>

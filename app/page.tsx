@@ -27,7 +27,7 @@ export default function HomePage() {
 
   return (
     <div className="w-full flex justify-center py-8 md:py-14 px-4 md:px-8">
-      <div className="w-full max-w-[1020px] flex flex-col gap-16 md:gap-20">
+      <div className="w-full max-w-[1200px] flex flex-col gap-16 md:gap-20">
         {/* 1. Hero Section */}
         <HeroSection showCta={true} />
 
@@ -36,7 +36,7 @@ export default function HomePage() {
 
         {/* 3. Featured Flagship Projects */}
         <section className="w-full space-y-6">
-          <ProjectsShowcase limit={4} showHeader={true} />
+          <ProjectsShowcase limit={6} showHeader={true} />
           <div className="flex justify-center pt-2">
             <Link
               href="/projects"
@@ -78,8 +78,11 @@ export default function HomePage() {
               <Link
                 key={art.id}
                 href="/blog"
-                className="flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-2xs hover:shadow-lg hover:border-sky-300 dark:hover:border-sky-500/40 transition-all duration-300 group hover:-translate-y-1 cursor-pointer"
+                className="flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-sky-500/10 dark:hover:shadow-sky-950/30 hover:border-sky-300 dark:hover:border-sky-500/40 transition-all duration-500 ease-out group hover:-translate-y-1 relative overflow-hidden cursor-pointer"
               >
+                {/* Subtle top scanline pulse on hover */}
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-sky-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200/50 dark:border-sky-500/20">

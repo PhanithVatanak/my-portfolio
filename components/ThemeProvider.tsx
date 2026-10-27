@@ -13,19 +13,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light';
-    try {
-      const saved = localStorage.getItem('spv_portfolio_theme') as Theme | null;
-      if (saved === 'dark' || saved === 'light') return saved;
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
-    } catch {
-      // fallback
-    }
-    return 'light';
-  });
+  const [theme, setThemeState] = useState<Theme>('light');
 
   // Synchronize DOM with the target theme
   const applyThemeToDom = useCallback((targetTheme: Theme) => {
@@ -57,7 +45,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    applyThemeToDom(theme);
+    try {
+      const saved = localStorage.getItem('spv_portfolio_theme') as Theme | null;
+      if (saved === 'dark' || saved === 'light') {
+        setThemeState(saved);
+        applyThemeToDom(saved);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setThemeState('dark');
+        applyThemeToDom('dark');
+      } else {
+        applyThemeToDom(theme);
+      }
+    } catch {
+      applyThemeToDom(theme);
+    }
 
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'spv_portfolio_theme' && (e.newValue === 'light' || e.newValue === 'dark')) {
@@ -67,7 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [theme, applyThemeToDom]);
+  }, [applyThemeToDom]);
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);

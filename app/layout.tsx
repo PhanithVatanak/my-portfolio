@@ -100,7 +100,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen flex flex-col bg-gradient-to-b from-sky-100/70 via-sky-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-[#020617] text-slate-800 dark:text-slate-100 antialiased selection:bg-sky-200 dark:selection:bg-sky-500/30 selection:text-sky-900 dark:selection:text-sky-200 transition-colors duration-300">
+      <body suppressHydrationWarning className="min-h-screen flex flex-col bg-gradient-to-b from-sky-100/70 via-sky-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-[#020617] text-slate-800 dark:text-slate-100 antialiased selection:bg-sky-200 dark:selection:bg-sky-500/30 selection:text-sky-900 dark:selection:text-sky-200 transition-colors duration-300">
         <ThemeProvider>
           <PortfolioDataProvider>
             <ToastProvider>

@@ -184,6 +184,7 @@ export function AboutStorySection() {
                 className="object-cover"
                 priority
                 referrerPolicy="no-referrer"
+                unoptimized={profile.avatarUrl?.startsWith('data:')}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent"></div>
             </div>
@@ -234,14 +235,13 @@ export function AboutStorySection() {
 
             {/* Interactive CV Triggers */}
             <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsResumeOpen(true)}
-                className="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+              <Link
+                href="/resume"
+                className="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 click-bounce"
               >
                 <FileText className="w-4 h-4" />
-                <span>Open Interactive Resume</span>
-              </button>
+                <span>Open Executive CV (A4)</span>
+              </Link>
 
               <Link
                 href="/contact"

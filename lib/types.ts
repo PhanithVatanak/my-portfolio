@@ -171,6 +171,7 @@ export interface TechRadarItem {
   proficiency: 'Production Battle-Tested' | 'Core Daily Stack' | 'Advanced Specialization';
   experienceYears: string;
   tags: string[];
+  showOnHome?: boolean;
 }
 
 export interface PortfolioData {

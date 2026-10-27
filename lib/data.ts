@@ -9,7 +9,7 @@ export const developerProfile = {
   location: 'Phnom Penh, Cambodia',
   email: 'phanith.vatanak@gmail.com',
   isAvailableForHire: true,
-  avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD2Wvq-xz7PqYbYaX496x-EiUQZVQCIkuMGqAU-DbnDg3lRFTaoT5iFH5SV8040Fxjbr3ZjDWVK3CY1E4kEIA5rFGBbK_USlaG0_rHIbKseJL7jX_yiBB65Q9V5-VTWWF04Rbte1aAfM0Kk7RJR00p2qIBjII_tOEhph9fAvUwRp24jvsYDNE3mhPneuEF3j3qXLXQ_s5U3s_-UpynPCALAuJThtNGUs76oJfc8vRX12KS5Uzh4k7HBAJxEDQwG3oIBfg9PJy99vkk',
+  avatarUrl: 'https://ik.imagekit.io/zucd2dshr2/my-portfolio/Gemini_Generated_Image_6oyoz56oyoz56oyo.jpg',
   tagline: "Let's build something together.",
   heroHeading: "Hi, I'm Sun Phanith Vatanak",
   heroSubtitle: "Web Developer based in Phnom Penh",
@@ -245,7 +245,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Backend & Enterprise Logic',
     proficiency: 'Core Daily Stack',
     experienceYears: '4+ yrs',
-    tags: ['Backend APIs', 'Automation', 'Data Pipelines', 'Scripting']
+    tags: ['Backend APIs', 'Automation', 'Data Pipelines', 'Scripting'],
+    showOnHome: true
   },
   {
     id: 'tr-frappe',
@@ -253,7 +254,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Backend & Enterprise Logic',
     proficiency: 'Production Battle-Tested',
     experienceYears: '3+ yrs',
-    tags: ['DocTypes', 'Workflows', 'ERPNext', 'HRMS Architecture', 'Permissions']
+    tags: ['DocTypes', 'Workflows', 'ERPNext', 'HRMS Architecture', 'Permissions'],
+    showOnHome: true
   },
   {
     id: 'tr-rest-api',
@@ -261,7 +263,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Backend & Enterprise Logic',
     proficiency: 'Production Battle-Tested',
     experienceYears: '4+ yrs',
-    tags: ['API Contracts', 'JSON Payloads', 'Authentication', 'Webhooks']
+    tags: ['API Contracts', 'JSON Payloads', 'Authentication', 'Webhooks'],
+    showOnHome: false
   },
 
   // Databases & Data Engineering
@@ -271,7 +274,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Databases & Data Engineering',
     proficiency: 'Production Battle-Tested',
     experienceYears: '4+ yrs',
-    tags: ['Query Optimization', 'Indexing', 'Schema Design', 'Data Migrations']
+    tags: ['Query Optimization', 'Indexing', 'Schema Design', 'Data Migrations'],
+    showOnHome: true
   },
   {
     id: 'tr-mssql',
@@ -279,7 +283,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Databases & Data Engineering',
     proficiency: 'Production Battle-Tested',
     experienceYears: '3+ yrs',
-    tags: ['T-SQL', 'Database Queries', 'Data Integrity', 'Systems Support']
+    tags: ['T-SQL', 'Database Queries', 'Data Integrity', 'Systems Support'],
+    showOnHome: false
   },
   {
     id: 'tr-qdrant',
@@ -287,7 +292,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Databases & Data Engineering',
     proficiency: 'Advanced Specialization',
     experienceYears: '2+ yrs',
-    tags: ['Vector Embeddings', 'Semantic Search', 'AI CV Extraction', 'Similarity Search']
+    tags: ['Vector Embeddings', 'Semantic Search', 'AI CV Extraction', 'Similarity Search'],
+    showOnHome: true
   },
 
   // Frontend & Modern Web
@@ -297,7 +303,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Frontend & Modern Web',
     proficiency: 'Production Battle-Tested',
     experienceYears: '5+ yrs',
-    tags: ['Async/Await', 'DOM Manipulation', 'Event Loop', 'Component State']
+    tags: ['Async/Await', 'DOM Manipulation', 'Event Loop', 'Component State'],
+    showOnHome: false
   },
   {
     id: 'tr-typescript',
@@ -305,7 +312,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Frontend & Modern Web',
     proficiency: 'Core Daily Stack',
     experienceYears: '3+ yrs',
-    tags: ['Strict Mode', 'Interfaces', 'Generics', 'Type Safety']
+    tags: ['Strict Mode', 'Interfaces', 'Generics', 'Type Safety'],
+    showOnHome: true
   },
   {
     id: 'tr-nextjs',
@@ -313,7 +321,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Frontend & Modern Web',
     proficiency: 'Core Daily Stack',
     experienceYears: '3+ yrs',
-    tags: ['App Router', 'Server Components', 'Responsive UI', 'Hooks']
+    tags: ['App Router', 'Server Components', 'Responsive UI', 'Hooks'],
+    showOnHome: true
   },
   {
     id: 'tr-html-css',
@@ -321,7 +330,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Frontend & Modern Web',
     proficiency: 'Production Battle-Tested',
     experienceYears: '5+ yrs',
-    tags: ['Responsive Layouts', 'Flexbox & Grid', 'Tailwind CSS', 'Semantic HTML']
+    tags: ['Responsive Layouts', 'Flexbox & Grid', 'Tailwind CSS', 'Semantic HTML'],
+    showOnHome: true
   },
 
   // Cloud, Notifications & Tooling
@@ -331,7 +341,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Cloud, Notifications & Tooling',
     proficiency: 'Production Battle-Tested',
     experienceYears: '2+ yrs',
-    tags: ['Web Push Notifications', 'Real-time Messaging', 'Service Workers']
+    tags: ['Web Push Notifications', 'Real-time Messaging', 'Service Workers'],
+    showOnHome: false
   },
   {
     id: 'tr-git',
@@ -339,7 +350,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Cloud, Notifications & Tooling',
     proficiency: 'Core Daily Stack',
     experienceYears: '4+ yrs',
-    tags: ['Version Control', 'Pull Requests', 'Branching', 'Code Review']
+    tags: ['Version Control', 'Pull Requests', 'Branching', 'Code Review'],
+    showOnHome: false
   },
   {
     id: 'tr-linux-docker',
@@ -347,7 +359,8 @@ export const initialTechRadar: TechRadarItem[] = [
     category: 'Cloud, Notifications & Tooling',
     proficiency: 'Production Battle-Tested',
     experienceYears: '3+ yrs',
-    tags: ['Linux Server Ops', 'Bash / Terminal', 'Containerization', 'Dev Environments']
+    tags: ['Linux Server Ops', 'Bash / Terminal', 'Containerization', 'Dev Environments'],
+    showOnHome: true
   }
 ];
 

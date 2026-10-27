@@ -38,3 +38,186 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.4);
 }
+
+/* Interactive Click & Tap Feedback */
+.click-bounce {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.click-bounce:active {
+  transform: scale(0.94);
+}
+
+/* Print Styles for Executive A4 Curriculum Vitae */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm 8mm 10mm;
+  }
+
+  /* Force print page background and natural flow with full color fidelity */
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* When printing from modal, hide the main page tree behind the portal */
+  body:has(#resume-modal-portal) > *:not(#resume-modal-portal) {
+    display: none !important;
+  }
+
+  /* Hide interactive controls, header, footer in print */
+  header.print\:hidden,
+  footer.print\:hidden,
+  nav,
+  .print-hide,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Portal wrapper resets */
+  #resume-modal-portal,
+  #resume-modal-portal > * {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    inset: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .resume-modal-container {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .resume-a4-sheet {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Avoid awkward page breaks */
+  .print-break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Preserve full color fidelity for cards, badges, gradients, and tags in print */
+  .resume-a4-sheet,
+  #resume-printable-area {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+/* =========================================================================
+   Tech Radar & Battle-Tested Tooling Orbital & Stream Keyframe Animations
+   ========================================================================= */
+@keyframes tech-orbit-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tech-orbit-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes tech-radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tech-stream-scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes tech-stream-scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-tech-orbit-cw {
+  animation: tech-orbit-cw 36s linear infinite;
+}
+
+.animate-tech-orbit-ccw {
+  animation: tech-orbit-ccw 26s linear infinite;
+}
+
+.animate-tech-counter-cw {
+  animation: tech-orbit-ccw 36s linear infinite;
+}
+
+.animate-tech-counter-ccw {
+  animation: tech-orbit-cw 26s linear infinite;
+}
+
+.animate-tech-sweep {
+  animation: tech-radar-sweep 8s linear infinite;
+}
+
+.animate-stream-left {
+  animation: tech-stream-scroll-left 22s linear infinite;
+}
+
+.animate-stream-right {
+  animation: tech-stream-scroll-right 22s linear infinite;
+}
+
+.animation-paused {
+  animation-play-state: paused !important;
+}
+

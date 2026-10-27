@@ -1,4 +1,6 @@
 import { createClient, Client } from '@libsql/client';
+import fs from 'fs';
+import path from 'path';
 import { PortfolioData, ContactMessage, TechRadarItem, Experience, EducationItem } from '@/lib/types';
 import {
   developerProfile,
@@ -13,6 +15,31 @@ import {
   telemetryMetrics,
   initialTechRadar,
 } from '@/lib/data';
+
+const LOCAL_VAULT_PATH = path.join(process.cwd(), 'lib', 'portfolio_vault.json');
+
+function readLocalVault(): PortfolioData | null {
+  try {
+    if (fs.existsSync(LOCAL_VAULT_PATH)) {
+      const raw = fs.readFileSync(LOCAL_VAULT_PATH, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return parsed as PortfolioData;
+      }
+    }
+  } catch (e) {
+    console.warn('[LocalVault] Failed to read portfolio_vault.json:', e);
+  }
+  return null;
+}
+
+function writeLocalVault(data: PortfolioData): void {
+  try {
+    fs.writeFileSync(LOCAL_VAULT_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[LocalVault] Failed to write portfolio_vault.json:', e);
+  }
+}
 
 let clientInstance: Client | null = null;
 let schemaInitialized = false;
@@ -77,6 +104,7 @@ export async function ensureTursoSchema(): Promise<boolean> {
           name TEXT NOT NULL,
           proficiency TEXT NOT NULL,
           experience_years TEXT NOT NULL,
+          show_on_home INTEGER DEFAULT 0,
           order_index INTEGER DEFAULT 0
         );`,
 
@@ -150,6 +178,11 @@ export async function ensureTursoSchema(): Promise<boolean> {
       ],
       'write'
     );
+    try {
+      await client.execute('ALTER TABLE tech_items ADD COLUMN show_on_home INTEGER DEFAULT 0;');
+    } catch {
+      // Column already exists
+    }
     schemaInitialized = true;
     return true;
   } catch (err) {
@@ -192,6 +225,7 @@ export async function getTechRadarFromDb(): Promise<TechRadarItem[]> {
         ti.proficiency,
         ti.experience_years AS experienceYears,
         ti.order_index AS orderIndex,
+        COALESCE(ti.show_on_home, 0) AS showOnHome,
         COALESCE((
           SELECT GROUP_CONCAT(tt.name, '||')
           FROM tech_item_tags tit
@@ -215,6 +249,7 @@ export async function getTechRadarFromDb(): Promise<TechRadarItem[]> {
       category: row.category as string,
       proficiency: row.proficiency as any,
       experienceYears: row.experienceYears as string,
+      showOnHome: Boolean(row.showOnHome === 1 || row.showOnHome === '1' || row.showOnHome === true),
       tags: row.tags ? (row.tags as string).split('||').filter(Boolean) : [],
     }));
   } catch (err) {
@@ -262,9 +297,9 @@ export async function saveTechRadarToDb(items: TechRadarItem[]): Promise<boolean
       const itemId = it.id || `tr-${Date.now()}-${i}`;
 
       statements.push({
-        sql: `INSERT INTO tech_items (id, category_id, name, proficiency, experience_years, order_index)
-              VALUES (?, ?, ?, ?, ?, ?);`,
-        args: [itemId, catId, it.name, it.proficiency, it.experienceYears, i],
+        sql: `INSERT INTO tech_items (id, category_id, name, proficiency, experience_years, show_on_home, order_index)
+              VALUES (?, ?, ?, ?, ?, ?, ?);`,
+        args: [itemId, catId, it.name, it.proficiency, it.experienceYears, it.showOnHome ? 1 : 0, i],
       });
 
       for (const tag of it.tags || []) {
@@ -357,12 +392,21 @@ async function syncEducationToRelational(client: Client, edus: EducationItem[]):
   }
 }
 
-export async function getPortfolioFromDb(): Promise<{ data: PortfolioData; source: 'turso' | 'static' }> {
+export async function getPortfolioFromDb(): Promise<{ data: PortfolioData; source: 'turso' | 'static' | 'local_vault' }> {
   const client = getTursoClient();
   const defaultData = getDefaultPortfolioData();
+  const localSaved = readLocalVault();
+
+  const baselineData: PortfolioData = localSaved
+    ? {
+        ...defaultData,
+        ...localSaved,
+        profile: localSaved.profile ? { ...defaultData.profile, ...localSaved.profile } : defaultData.profile,
+      }
+    : defaultData;
 
   if (!client) {
-    return { data: defaultData, source: 'static' };
+    return { data: baselineData, source: localSaved ? 'local_vault' : 'static' };
   }
 
   try {
@@ -380,42 +424,46 @@ export async function getPortfolioFromDb(): Promise<{ data: PortfolioData; sourc
     if (result.rows && result.rows.length > 0) {
       const rawJson = result.rows[0].data as string;
       const parsed = JSON.parse(rawJson);
-      const articles = (parsed.articles || defaultData.articles || []).map((a: any) => ({
+      const articles = (parsed.articles || baselineData.articles || []).map((a: any) => ({
         ...a,
         slug: a.id || a.slug,
       }));
-      const projects = (parsed.projects || defaultData.projects || []).map((p: any) => ({
+      const projects = (parsed.projects || baselineData.projects || []).map((p: any) => ({
         ...p,
         slug: p.id || p.slug,
       }));
+      const finalData: PortfolioData = {
+        ...baselineData,
+        ...parsed,
+        articles,
+        projects,
+        profile: parsed.profile ? { ...baselineData.profile, ...parsed.profile } : baselineData.profile,
+        techRadar: relationalTechRadar && relationalTechRadar.length > 0 ? relationalTechRadar : (parsed.techRadar || baselineData.techRadar),
+      };
+      writeLocalVault(finalData);
       return {
-        data: {
-          ...defaultData,
-          ...parsed,
-          articles,
-          projects,
-          profile: parsed.profile ? { ...defaultData.profile, ...parsed.profile } : defaultData.profile,
-          techRadar: relationalTechRadar && relationalTechRadar.length > 0 ? relationalTechRadar : (parsed.techRadar || defaultData.techRadar),
-        },
+        data: finalData,
         source: 'turso',
       };
     }
 
-    // Auto-seed Turso on first read if empty
+    // Auto-seed Turso on first read if empty (use baselineData so any local edits are pushed to Turso!)
+    const seedData = baselineData;
     await client.execute({
       sql: 'INSERT INTO portfolio_vault (id, data, updated_at) VALUES (?, ?, ?)',
-      args: ['main', JSON.stringify(defaultData), new Date().toISOString()],
+      args: ['main', JSON.stringify(seedData), new Date().toISOString()],
     });
 
     // Seed relational tables
-    await saveTechRadarToDb(defaultData.techRadar || initialTechRadar);
-    await syncExperiencesToRelational(client, defaultData.experiences);
-    await syncEducationToRelational(client, defaultData.education);
+    await saveTechRadarToDb(seedData.techRadar || initialTechRadar);
+    await syncExperiencesToRelational(client, seedData.experiences);
+    await syncEducationToRelational(client, seedData.education);
 
-    return { data: defaultData, source: 'turso' };
+    writeLocalVault(seedData);
+    return { data: seedData, source: 'turso' };
   } catch (err) {
-    console.error('[Turso] Error fetching portfolio data, falling back to static:', err);
-    return { data: defaultData, source: 'static' };
+    console.error('[Turso] Error fetching portfolio data, falling back to local/static:', err);
+    return { data: baselineData, source: localSaved ? 'local_vault' : 'static' };
   }
 }
 
@@ -428,6 +476,9 @@ export async function savePortfolioToDb(partial: Partial<PortfolioData>): Promis
     ...partial,
     profile: partial.profile ? { ...current.profile, ...partial.profile } : current.profile,
   };
+
+  // Always persist locally to JSON file immediately
+  writeLocalVault(merged);
 
   if (!client) {
     return merged;
@@ -467,6 +518,8 @@ export async function savePortfolioToDb(partial: Partial<PortfolioData>): Promis
 export async function resetPortfolioInDb(): Promise<PortfolioData> {
   const client = getTursoClient();
   const defaultData = getDefaultPortfolioData();
+
+  writeLocalVault(defaultData);
 
   if (!client) {
     return defaultData;

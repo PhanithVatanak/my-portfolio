@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { MapPin, Briefcase, Sparkles, ArrowRight } from 'lucide-react';
 import { usePortfolioData } from '@/components/PortfolioDataContext';
 import { motion } from 'motion/react';
+import { triggerNavAnimation } from './PageTransition';
+import { HeroTechStackAnimation } from './HeroTechStackAnimation';
 
 export function HeroSection({ showCta = true }: { showCta?: boolean }) {
   const { data } = usePortfolioData();
@@ -15,14 +17,16 @@ export function HeroSection({ showCta = true }: { showCta?: boolean }) {
       <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-80 h-80 md:w-96 md:h-96 bg-sky-200/50 dark:bg-sky-500/10 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse"></div>
       <div className="absolute top-1/4 right-1/4 w-60 h-60 bg-blue-200/30 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
-      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
-        {/* Avatar with holographic ring & status indicator */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="relative group shrink-0"
-        >
+      <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-8 lg:gap-8 xl:gap-12">
+        {/* Left Column: Avatar + Profile Information */}
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 lg:gap-10 flex-1 max-w-3xl xl:max-w-4xl">
+          {/* Avatar with holographic ring & status indicator */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="relative group shrink-0"
+          >
           {/* Animated radar sonar pulse around the avatar */}
           <div className="absolute -inset-2 rounded-full border-2 border-sky-400/40 dark:border-sky-400/30 animate-ping pointer-events-none"></div>
           <div className="absolute -inset-1 rounded-full border border-sky-500/50 dark:border-sky-400/50 animate-pulse pointer-events-none"></div>
@@ -36,6 +40,7 @@ export function HeroSection({ showCta = true }: { showCta?: boolean }) {
               className="object-cover transition-transform duration-700 group-hover:scale-105"
               priority
               referrerPolicy="no-referrer"
+              unoptimized={developerProfile.avatarUrl?.startsWith('data:')}
             />
           </div>
 
@@ -57,7 +62,7 @@ export function HeroSection({ showCta = true }: { showCta?: boolean }) {
             <span>Senior Systems Architect & Frontend Engineer</span>
           </div>
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold font-display tracking-tight text-slate-900 dark:text-slate-50 mb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] xl:text-5xl font-extrabold font-display tracking-tight text-slate-900 dark:text-slate-50 mb-3 md:whitespace-nowrap">
             Hi, I&apos;m <span className="text-sky-600 dark:text-sky-400">{developerProfile.name}</span>
           </h1>
 
@@ -91,19 +96,32 @@ export function HeroSection({ showCta = true }: { showCta?: boolean }) {
             <div className="flex flex-wrap gap-3 mt-8 justify-center md:justify-start">
               <Link
                 href="/contact"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm shadow-md shadow-sky-600/20 hover:shadow-lg hover:shadow-sky-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => triggerNavAnimation()}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm shadow-md shadow-sky-600/20 hover:shadow-lg hover:shadow-sky-600/30 transition-all click-bounce hover:scale-[1.02] cursor-pointer"
               >
                 <span>Get In Touch</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/projects"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white dark:bg-slate-900 border border-sky-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 font-semibold text-sm shadow-sm transition-all hover:bg-sky-50/50 dark:hover:bg-slate-800/80"
+                onClick={() => triggerNavAnimation()}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white dark:bg-slate-900 border border-sky-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 font-semibold text-sm shadow-sm transition-all hover:bg-sky-50/50 dark:hover:bg-slate-800/80 click-bounce hover:scale-[1.02] cursor-pointer"
               >
                 <span>View Projects</span>
               </Link>
             </div>
           )}
+        </motion.div>
+        </div>
+
+        {/* Right Column: Animated Technical Stack & Battle-Tested Tooling Widget */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.65, delay: 0.2, ease: 'easeOut' }}
+          className="w-full lg:flex-1 shrink-0 flex justify-center items-center self-center mt-6 lg:mt-0"
+        >
+          <HeroTechStackAnimation />
         </motion.div>
       </div>
     </section>

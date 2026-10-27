@@ -65,7 +65,8 @@ import {
   PanelLeftOpen,
   Clipboard,
   CheckCheck,
-  Cpu
+  Cpu,
+  Camera
 } from 'lucide-react';
 import { usePortfolioData } from './PortfolioDataContext';
 import { useToast } from './ToastContext';
@@ -120,6 +121,229 @@ const AVAILABLE_PLATFORM_ICONS = [
   { value: 'sparkles', label: 'AI / Sparkles' },
   { value: 'link-2', label: 'Generic Link' },
 ];
+
+interface AvatarImageManagerProps {
+  avatarUrl: string;
+  onChange: (newUrl: string) => void;
+  defaultAvatarUrl: string;
+  showToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+  title?: string;
+  subtitle?: string;
+}
+
+function AvatarImageManager({
+  avatarUrl,
+  onChange,
+  defaultAvatarUrl,
+  showToast,
+  title = "Profile Image / Headshot Avatar",
+  subtitle = "Choose either an ImageKit URL (fastest & recommended) or attach a JPG file directly from your computer."
+}: AvatarImageManagerProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (.jpg, .jpeg, .png, .webp)', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      // Use window.Image constructor to avoid conflict with Next.js Image component
+      const ImgConstructor = (typeof window !== 'undefined' ? (window as unknown as { Image: new () => HTMLImageElement }).Image : null);
+      if (!ImgConstructor) return;
+      const img = new ImgConstructor();
+      img.onload = () => {
+        // High quality scale down to 600x600 max to keep storage compact & ultra-fast
+        const canvas = document.createElement('canvas');
+        const maxDim = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+          onChange(compressedDataUrl);
+          showToast('Image attached and optimized as profile picture!', 'success');
+        } else {
+          onChange(loadEvent.target?.result as string);
+          showToast('Image attached as profile picture!', 'success');
+        }
+      };
+      img.src = loadEvent.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const isImageKit = avatarUrl?.includes('imagekit.io');
+  const isDataUrl = avatarUrl?.startsWith('data:');
+  const isLocal = avatarUrl?.startsWith('/') && !avatarUrl?.startsWith('//');
+
+  return (
+    <div className="md:col-span-3 p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+            {title}
+          </label>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            {subtitle}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {isImageKit ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30">
+              <CheckCircle2 className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+              ImageKit CDN Active
+            </span>
+          ) : isDataUrl ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              Direct File Attached
+            </span>
+          ) : isLocal ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/30">
+              Public Asset
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              External URL
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row items-center gap-5">
+        {/* Avatar Live Preview */}
+        <div className="relative group shrink-0">
+          <div className="size-24 sm:size-28 rounded-2xl overflow-hidden ring-4 ring-sky-300/80 dark:ring-sky-500/60 shadow-md bg-slate-200 dark:bg-slate-800 relative flex items-center justify-center">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt="Avatar Preview"
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    'https://picsum.photos/seed/vatanak/400/400';
+                }}
+              />
+            ) : (
+              <User className="size-10 text-slate-400" />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md cursor-pointer transition-transform hover:scale-110"
+            title="Upload / Change JPG"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Actions & URL Input */}
+        <div className="flex-1 w-full space-y-3">
+          {/* File attachment button + hidden input */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              Attach Local JPG / PNG
+            </button>
+
+            <a
+              href="https://imagekit.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-sky-500" />
+              Open ImageKit.io
+            </a>
+
+            {avatarUrl && avatarUrl !== defaultAvatarUrl && (
+              <button
+                type="button"
+                onClick={() => onChange(defaultAvatarUrl)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 text-xs font-medium transition-all cursor-pointer"
+                title="Reset to default avatar"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
+              </button>
+            )}
+          </div>
+
+          {/* URL Input */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Or paste direct ImageKit URL / Cloud CDN Link:
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={avatarUrl}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="https://ik.imagekit.io/your_id/profile.jpg or /avatar.jpg"
+                className="w-full pl-3 pr-20 py-2 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+              {avatarUrl?.startsWith('http') && (
+                <a
+                  href={avatarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+                >
+                  Test Link <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-sky-50/70 dark:bg-sky-950/20 p-2.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
+            <strong className="text-sky-800 dark:text-sky-300">💡 Image Option Guide:</strong>
+            <ul className="list-disc list-inside mt-1 space-y-0.5 text-slate-600 dark:text-slate-400">
+              <li>
+                <strong className="text-slate-800 dark:text-slate-200">ImageKit URL (Recommended):</strong> Upload your JPG to ImageKit.io and paste the link. Blazing fast CDN, auto WebP compression, and zero database bloat.
+              </li>
+              <li>
+                <strong className="text-slate-800 dark:text-slate-200">Attach Local JPG:</strong> Click <em>&quot;Attach Local JPG / PNG&quot;</em> to upload directly from your computer without needing an account (auto-compressed).
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AdminDashboard() {
   const {
@@ -664,13 +888,14 @@ export function AdminDashboard() {
       proficiency: 'Production Battle-Tested',
       experienceYears: '3+ yrs',
       tags: [],
+      showOnHome: true,
     };
     setEditingTech(newTech);
     setIsNewTech(true);
   };
 
   const handleOpenEditTech = (tech: TechRadarItem) => {
-    setEditingTech({ ...tech, tags: [...(tech.tags || [])] });
+    setEditingTech({ ...tech, showOnHome: Boolean(tech.showOnHome), tags: [...(tech.tags || [])] });
     setIsNewTech(false);
   };
 
@@ -1313,23 +1538,53 @@ export function AdminDashboard() {
 
   // Prevent background page from scrolling when JSON modal or editor modals are open
   useEffect(() => {
-    const isModalActive = jsonModalOpen || Boolean(editingEdu) || Boolean(editingExp) || Boolean(editingTech);
+    const isModalActive =
+      jsonModalOpen ||
+      Boolean(editingEdu) ||
+      Boolean(editingExp) ||
+      Boolean(editingTech) ||
+      Boolean(editingWhatIDo);
+
     if (!isModalActive) return;
 
-    const originalOverflow = document.body.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverscroll = document.body.style.overscrollBehavior;
+    const originalHtmlOverscroll = document.documentElement.style.overscrollBehavior;
     const originalPaddingRight = document.body.style.paddingRight;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
+    // Completely lock both html and body so no wheel or touch can scroll the underlying page
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overscrollBehavior = 'none';
+
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.paddingRight = originalPaddingRight;
+    // Intercept document-level wheel events: allow scrolling only inside elements with overflow
+    const handleDocumentWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const scrollable = target.closest('.overflow-y-auto, .overflow-y-scroll, textarea, input, select');
+      if (!scrollable) {
+        e.preventDefault();
+      }
     };
-  }, [jsonModalOpen, editingEdu, editingExp, editingTech]);
+
+    window.addEventListener('wheel', handleDocumentWheel, { passive: false });
+
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overscrollBehavior = originalHtmlOverscroll;
+      document.body.style.overscrollBehavior = originalBodyOverscroll;
+      document.body.style.paddingRight = originalPaddingRight;
+      window.removeEventListener('wheel', handleDocumentWheel);
+    };
+  }, [jsonModalOpen, editingEdu, editingExp, editingTech, editingWhatIDo]);
 
   // Handle smooth mouse-wheel horizontal scrolling over the Target tabs and block background scroll bleed
   useEffect(() => {
@@ -1355,21 +1610,39 @@ export function AdminDashboard() {
     };
   }, [jsonModalOpen]);
 
-  // Close JSON modal or exit fullscreen on Escape key
+  // Close modals or exit fullscreen on Escape key
   useEffect(() => {
-    if (!jsonModalOpen) return;
+    const isModalActive =
+      jsonModalOpen ||
+      Boolean(editingEdu) ||
+      Boolean(editingExp) ||
+      Boolean(editingTech) ||
+      Boolean(editingWhatIDo);
+
+    if (!isModalActive) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (jsonModalFullscreen) {
-          setJsonModalFullscreen(false);
-        } else {
-          setJsonModalOpen(false);
+        if (editingTech) {
+          setEditingTech(null);
+        } else if (editingEdu) {
+          setEditingEdu(null);
+        } else if (editingWhatIDo) {
+          setEditingWhatIDo(null);
+        } else if (editingExp) {
+          setEditingExp(null);
+        } else if (jsonModalOpen) {
+          if (jsonModalFullscreen) {
+            setJsonModalFullscreen(false);
+          } else {
+            setJsonModalOpen(false);
+          }
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [jsonModalOpen, jsonModalFullscreen]);
+  }, [jsonModalOpen, jsonModalFullscreen, editingTech, editingEdu, editingWhatIDo, editingExp]);
 
   const handleResetDefaultsConfirm = async () => {
     if (!requireAdmin('Factory resetting portfolio')) return;
@@ -1884,7 +2157,7 @@ export function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[11px]">
                   <span>Last Log:</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-300">
+                  <span className="font-mono text-slate-700 dark:text-slate-300" suppressHydrationWarning>
                     {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'Synced'}
                   </span>
                 </div>
@@ -1953,25 +2226,15 @@ export function AdminDashboard() {
               </div>
             )}
 
-            {/* WORKSPACE HEADER: Breadcrumbs & Page Action Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 md:p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                  <span>Admin</span>
-                  <span>/</span>
-                  <span className="text-sky-600 dark:text-sky-400">
-                    {pageNavItems.some((p) => p.id === activeTab) ? 'Page Editors' : 'System'}
-                  </span>
-                  <span>/</span>
-                  <span className="text-slate-900 dark:text-white font-bold">{currentTabMeta.label}</span>
+            {/* WORKSPACE HEADER: Sticky Page Title & Action Bar */}
+            <div className="sticky top-16 z-30 flex items-center justify-between gap-4 p-4 md:px-6 md:py-3.5 rounded-2xl bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-md transition-all">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-sky-100 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <currentTabMeta.icon className="w-5 h-5" />
                 </div>
-                <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                  <currentTabMeta.icon className="w-6 h-6 text-sky-600 dark:text-sky-400" />
-                  <span>{currentTabMeta.label}</span>
+                <h1 className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-white font-display">
+                  {currentTabMeta.label}
                 </h1>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  {currentTabMeta.subtitle}. Modifications serialize directly into the reactive portfolio JSON state.
-                </p>
               </div>
 
               {/* Action buttons on page editor header */}
@@ -1980,10 +2243,10 @@ export function AdminDashboard() {
                   <Link
                     href={currentTabMeta.previewHref}
                     target="_blank"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5 text-sky-600" />
-                    <span>View Section</span>
+                    <span className="hidden sm:inline">View Section</span>
                     <ExternalLink className="w-3 h-3 opacity-60" />
                   </Link>
                 )}
@@ -1991,7 +2254,7 @@ export function AdminDashboard() {
                 {(activeTab === 'home' || activeTab === 'about' || activeTab === 'contact') && (
                   <button
                     onClick={() => handleSaveProfileAndLinks()}
-                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-600/25 hover:shadow-sky-600/35 active:scale-95 transition-all cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
                     <span>Save {currentTabMeta.label} Changes</span>
@@ -2097,6 +2360,15 @@ export function AdminDashboard() {
                         </span>
                       </div>
                     </div>
+
+                    <AvatarImageManager
+                      avatarUrl={profileForm.avatarUrl}
+                      onChange={(newUrl) => setProfileOverrides((prev) => ({ ...prev, avatarUrl: newUrl }))}
+                      defaultAvatarUrl={data.profile.avatarUrl}
+                      showToast={showToast}
+                      title="Hero Avatar & Profile Headshot"
+                      subtitle="Displayed front-and-center on your homepage hero radar & about page."
+                    />
                   </div>
                 </div>
 
@@ -2319,17 +2591,14 @@ export function AdminDashboard() {
                       />
                     </div>
 
-                    <div className="md:col-span-3">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
-                        Avatar Image URL
-                      </label>
-                      <input
-                        type="text"
-                        value={profileForm.avatarUrl}
-                        onChange={(e) => setProfileOverrides((prev) => ({ ...prev, avatarUrl: e.target.value }))}
-                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-slate-100"
-                      />
-                    </div>
+                    <AvatarImageManager
+                      avatarUrl={profileForm.avatarUrl}
+                      onChange={(newUrl) => setProfileOverrides((prev) => ({ ...prev, avatarUrl: newUrl }))}
+                      defaultAvatarUrl={data.profile.avatarUrl}
+                      showToast={showToast}
+                      title="Profile Image / Headshot Avatar"
+                      subtitle="Displayed on Home Hero banner and About Page Story Showcase."
+                    />
 
                     <div className="md:col-span-3">
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
@@ -2723,41 +2992,71 @@ export function AdminDashboard() {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-end gap-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                        <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                          {/* Quick Toggle: Show in Homepage Hero Animation */}
                           <button
                             type="button"
-                            onClick={() => handleMoveTech(idx, 'up')}
-                            disabled={idx === 0}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
-                            title="Move Up"
+                            onClick={async () => {
+                              const nextShow = !tech.showOnHome;
+                              const nextList = techRadarListState.map((t) =>
+                                t.id === tech.id ? { ...t, showOnHome: nextShow } : t
+                              );
+                              setTechRadarOverrides(nextList);
+                              if (updateTechRadar) await updateTechRadar(nextList);
+                              showToast(
+                                nextShow
+                                  ? `"${tech.name}" added to Homepage Animation!`
+                                  : `"${tech.name}" removed from Homepage Animation!`,
+                                'success'
+                              );
+                            }}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${
+                              tech.showOnHome
+                                ? 'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold border border-sky-300/80 dark:border-sky-500/40 shadow-2xs'
+                                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200/60 dark:border-slate-800'
+                            }`}
+                            title="Click to toggle display in Homepage Hero Animation"
                           >
-                            <ChevronUp className="w-4 h-4" />
+                            <span className={`w-1.5 h-1.5 rounded-full ${tech.showOnHome ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`} />
+                            <span>{tech.showOnHome ? 'On Home' : 'Off Home'}</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveTech(idx, 'down')}
-                            disabled={idx === techRadarListState.length - 1}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
-                            title="Move Down"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditTech(tech)}
-                            className="p-1.5 text-slate-400 hover:text-sky-600 transition-colors cursor-pointer"
-                            title="Edit Technology"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTech(tech.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title="Delete Technology"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveTech(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
+                              title="Move Up"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveTech(idx, 'down')}
+                              disabled={idx === techRadarListState.length - 1}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
+                              title="Move Down"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditTech(tech)}
+                              className="p-1.5 text-slate-400 hover:text-sky-600 transition-colors cursor-pointer"
+                              title="Edit Technology"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTech(tech.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                              title="Delete Technology"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -3723,7 +4022,7 @@ export function AdminDashboard() {
                       </div>
                     </div>
                     <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-display mb-1">99.98%</div>
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono" suppressHydrationWarning>
                       {lastUpdated ? `Sync: ${new Date(lastUpdated).toLocaleTimeString()}` : 'Real-time state synced'}
                     </span>
                   </div>
@@ -3832,7 +4131,7 @@ export function AdminDashboard() {
                       <span className="size-2 rounded-full bg-emerald-500"></span>
                       portfolio-payload.json
                     </span>
-                    <span>{lastUpdated ? `Last modified: ${new Date(lastUpdated).toLocaleString()}` : 'Live'}</span>
+                    <span suppressHydrationWarning>{lastUpdated ? `Last modified: ${new Date(lastUpdated).toLocaleString()}` : 'Live'}</span>
                   </div>
                   <pre className="text-sky-300 font-mono text-xs overflow-x-auto max-h-[600px] leading-relaxed scrollbar-thin">
                     {getFormattedJson()}
@@ -3849,450 +4148,581 @@ export function AdminDashboard() {
       {/* ========================================================= */}
 
       {/* ADD / EDIT EDUCATION CREDENTIAL MODAL */}
-      {editingEdu && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
-                  {isNewEdu ? 'Add New Education Credential' : 'Edit Academic Credential'}
-                </h3>
+      {editingEdu &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setEditingEdu(null);
+            }}
+            onWheel={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain select-none"
+          >
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl h-auto max-h-[85vh] flex flex-col shadow-2xl overflow-hidden select-text">
+              {/* Pinned Header */}
+              <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white/95 dark:bg-slate-900/95">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-2xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-display">
+                      {isNewEdu ? 'Add Academic Credential' : 'Edit Academic Credential'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure degrees, university institutions, and academic coursework
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingEdu(null)}
+                  className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setEditingEdu(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              {/* Scrollable Form Body */}
+              <div className="p-6 sm:p-8 space-y-5 overflow-y-auto overscroll-contain flex-1">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Degree & Specialization Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editingEdu.degree}
+                    onChange={(e) => setEditingEdu({ ...editingEdu, degree: e.target.value })}
+                    placeholder="e.g. Master of Science in Software Architecture"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Institution / University
+                    </label>
+                    <input
+                      type="text"
+                      value={editingEdu.institution}
+                      onChange={(e) => setEditingEdu({ ...editingEdu, institution: e.target.value })}
+                      placeholder="e.g. Cambodia Academy of Digital Technology"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Location (City, Country)
+                    </label>
+                    <input
+                      type="text"
+                      value={editingEdu.location}
+                      onChange={(e) => setEditingEdu({ ...editingEdu, location: e.target.value })}
+                      placeholder="e.g. Phnom Penh, Cambodia"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Period (e.g. 2023 - 2025)
+                    </label>
+                    <input
+                      type="text"
+                      value={editingEdu.period}
+                      onChange={(e) => setEditingEdu({ ...editingEdu, period: e.target.value })}
+                      placeholder="2023 - 2025"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Honors, Distinction & GPA
+                    </label>
+                    <input
+                      type="text"
+                      value={editingEdu.honors || ''}
+                      onChange={(e) => setEditingEdu({ ...editingEdu, honors: e.target.value })}
+                      placeholder="e.g. Summa Cum Laude • GPA 3.90 / 4.0"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Academic Focus & Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editingEdu.description}
+                    onChange={(e) => setEditingEdu({ ...editingEdu, description: e.target.value })}
+                    placeholder="Focus on distributed systems, cloud computing, compilers, and microservices."
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Key Coursework & Competencies (comma-separated tags)
+                  </label>
+                  <input
+                    type="text"
+                    value={(editingEdu.coursework || []).join(', ')}
+                    onChange={(e) =>
+                      setEditingEdu({
+                        ...editingEdu,
+                        coursework: e.target.value.split(',').map((c) => c.trim()).filter(Boolean),
+                      })
+                    }
+                    placeholder="Distributed Systems, Cloud Native Architecture, Compilers & Runtimes, Algorithms"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Pinned Action Footer */}
+              <div className="flex justify-end gap-3 px-6 sm:px-8 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingEdu(null)}
+                  className="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEduModal}
+                  className="px-7 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold shadow-md shadow-sky-600/25 transition-all cursor-pointer"
+                >
+                  Save Credential
+                </button>
+              </div>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Degree & Specialization Title
-                </label>
-                <input
-                  type="text"
-                  value={editingEdu.degree}
-                  onChange={(e) => setEditingEdu({ ...editingEdu, degree: e.target.value })}
-                  placeholder="e.g. Bachelor of Science in Computer Science"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Institution / University
-                  </label>
-                  <input
-                    type="text"
-                    value={editingEdu.institution}
-                    onChange={(e) => setEditingEdu({ ...editingEdu, institution: e.target.value })}
-                    placeholder="e.g. Royal University of Phnom Penh"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Location (City, Country)
-                  </label>
-                  <input
-                    type="text"
-                    value={editingEdu.location}
-                    onChange={(e) => setEditingEdu({ ...editingEdu, location: e.target.value })}
-                    placeholder="e.g. Phnom Penh, Cambodia"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Period (e.g. 2019 - 2023)
-                  </label>
-                  <input
-                    type="text"
-                    value={editingEdu.period}
-                    onChange={(e) => setEditingEdu({ ...editingEdu, period: e.target.value })}
-                    placeholder="2019 - 2023"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Honors, Distinction & GPA
-                  </label>
-                  <input
-                    type="text"
-                    value={editingEdu.honors || ''}
-                    onChange={(e) => setEditingEdu({ ...editingEdu, honors: e.target.value })}
-                    placeholder="e.g. Summa Cum Laude • GPA 3.85 / 4.0"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Academic Focus & Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={editingEdu.description}
-                  onChange={(e) => setEditingEdu({ ...editingEdu, description: e.target.value })}
-                  placeholder="Focus on software engineering, distributed networks, and real-time computing."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Key Coursework & Competencies (comma-separated tags)
-                </label>
-                <input
-                  type="text"
-                  value={(editingEdu.coursework || []).join(', ')}
-                  onChange={(e) =>
-                    setEditingEdu({
-                      ...editingEdu,
-                      coursework: e.target.value.split(',').map((c) => c.trim()).filter(Boolean),
-                    })
-                  }
-                  placeholder="Distributed Systems, Cloud Architecture, Data Structures, WebGPU"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setEditingEdu(null)}
-                className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEduModal}
-                className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
-              >
-                Save Credential
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* ADD / EDIT TECH RADAR ITEM MODAL */}
-      {editingTech && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl p-6 md:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
-                  {isNewTech ? 'Add Technology to Radar' : 'Edit Production Technology'}
-                </h3>
+      {editingTech &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setEditingTech(null);
+            }}
+            onWheel={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain select-none"
+          >
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl h-auto max-h-[85vh] flex flex-col shadow-2xl overflow-hidden select-text">
+              {/* Pinned Header */}
+              <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white/95 dark:bg-slate-900/95">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-2xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+                    <Cpu className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-display">
+                      {isNewTech ? 'Add Production Technology' : 'Edit Production Technology'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure stack classification, experience tenure, and homepage animation visibility
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingTech(null)}
+                  className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setEditingTech(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Technology / Tool Name
-                </label>
-                <input
-                  type="text"
-                  value={editingTech.name}
-                  onChange={(e) => setEditingTech({ ...editingTech, name: e.target.value })}
-                  placeholder="e.g. Python, Frappe Framework, MariaDB"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Scrollable Form Body */}
+              <div className="p-6 sm:p-8 space-y-5 overflow-y-auto overscroll-contain flex-1">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Category
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Technology / Tool Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTech.name}
+                    onChange={(e) => setEditingTech({ ...editingTech, name: e.target.value })}
+                    placeholder="e.g. Next.js & React, Python, Frappe Framework, MariaDB"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Category
+                    </label>
+                    <select
+                      value={editingTech.category}
+                      onChange={(e) => setEditingTech({ ...editingTech, category: e.target.value })}
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all cursor-pointer"
+                    >
+                      <option value="Backend & Enterprise Logic">Backend & Enterprise Logic</option>
+                      <option value="Databases & Data Engineering">Databases & Data Engineering</option>
+                      <option value="Frontend & Modern Web">Frontend & Modern Web</option>
+                      <option value="Cloud, Notifications & Tooling">Cloud, Notifications & Tooling</option>
+                      <option value="Architecture & Craft">Architecture & Craft</option>
+                      <option value="Languages & Core">Languages & Core</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Experience / Tenure
+                    </label>
+                    <input
+                      type="text"
+                      value={editingTech.experienceYears}
+                      onChange={(e) => setEditingTech({ ...editingTech, experienceYears: e.target.value })}
+                      placeholder="e.g. 4+ yrs"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Proficiency Classification
                   </label>
                   <select
-                    value={editingTech.category}
-                    onChange={(e) => setEditingTech({ ...editingTech, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                    value={editingTech.proficiency}
+                    onChange={(e) => setEditingTech({ ...editingTech, proficiency: e.target.value as any })}
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all cursor-pointer"
                   >
-                    <option value="Backend & Enterprise Logic">Backend & Enterprise Logic</option>
-                    <option value="Databases & Data Engineering">Databases & Data Engineering</option>
-                    <option value="Frontend & Modern Web">Frontend & Modern Web</option>
-                    <option value="Cloud, Notifications & Tooling">Cloud, Notifications & Tooling</option>
-                    <option value="Architecture & Craft">Architecture & Craft</option>
-                    <option value="Languages & Core">Languages & Core</option>
+                    <option value="Production Battle-Tested">Production Battle-Tested (Proven in high-traffic production)</option>
+                    <option value="Core Daily Stack">Core Daily Stack (Used in active daily development)</option>
+                    <option value="Advanced Specialization">Advanced Specialization (Niche / AI / High-impact architecture)</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Experience / Tenure
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Sub-specializations & Tags (comma-separated)
                   </label>
                   <input
                     type="text"
-                    value={editingTech.experienceYears}
-                    onChange={(e) => setEditingTech({ ...editingTech, experienceYears: e.target.value })}
-                    placeholder="e.g. 4+ yrs"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                    value={(editingTech.tags || []).join(', ')}
+                    onChange={(e) =>
+                      setEditingTech({
+                        ...editingTech,
+                        tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
+                      })
+                    }
+                    placeholder="e.g. App Router, Server Components, Distributed Caching, MariaDB"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                  />
+                </div>
+
+                {/* Show on Homepage Hero Animation Checkbox */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-sky-50/80 dark:bg-sky-500/10 border border-sky-200/80 dark:border-sky-500/20 flex items-center justify-between gap-4 transition-all hover:border-sky-400/50">
+                  <div className="space-y-0.5">
+                    <label htmlFor="showOnHomeCheckbox" className="text-sm font-bold text-slate-900 dark:text-slate-100 block cursor-pointer">
+                      Show in Homepage Hero Planetary Animation
+                    </label>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Feature this skill icon in the dynamic rotating planetary orbit displayed prominently on the homepage hero
+                    </p>
+                  </div>
+                  <input
+                    id="showOnHomeCheckbox"
+                    type="checkbox"
+                    checked={Boolean(editingTech.showOnHome)}
+                    onChange={(e) => setEditingTech({ ...editingTech, showOnHome: e.target.checked })}
+                    className="w-5 h-5 rounded-md border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Proficiency Classification
-                </label>
-                <select
-                  value={editingTech.proficiency}
-                  onChange={(e) => setEditingTech({ ...editingTech, proficiency: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+              {/* Pinned Action Footer */}
+              <div className="flex justify-end gap-3 px-6 sm:px-8 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingTech(null)}
+                  className="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  <option value="Production Battle-Tested">Production Battle-Tested (Proven in production)</option>
-                  <option value="Core Daily Stack">Core Daily Stack (Used daily)</option>
-                  <option value="Advanced Specialization">Advanced Specialization (Niche / AI / High-impact)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Sub-specializations & Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={(editingTech.tags || []).join(', ')}
-                  onChange={(e) =>
-                    setEditingTech({
-                      ...editingTech,
-                      tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
-                    })
-                  }
-                  placeholder="e.g. Backend APIs, Automation, Scripting"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveTechModal}
+                  className="px-7 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold shadow-md shadow-sky-600/25 transition-all cursor-pointer"
+                >
+                  Save Technology
+                </button>
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setEditingTech(null)}
-                className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveTechModal}
-                className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
-              >
-                Save Technology
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* ADD / EDIT WHAT I DO SERVICE CARD MODAL */}
-      {editingWhatIDo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
-                  {isNewWhatIDo ? 'Add Service Card' : 'Edit Service Card'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setEditingWhatIDo(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Service Title
-                </label>
-                <input
-                  type="text"
-                  value={editingWhatIDo.title}
-                  onChange={(e) => setEditingWhatIDo({ ...editingWhatIDo, title: e.target.value })}
-                  placeholder="e.g. Distributed Systems Architecture"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Icon Identifier
-                </label>
-                <select
-                  value={editingWhatIDo.icon}
-                  onChange={(e) => setEditingWhatIDo({ ...editingWhatIDo, icon: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+      {editingWhatIDo &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setEditingWhatIDo(null);
+            }}
+            onWheel={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain select-none"
+          >
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-3xl h-auto max-h-[85vh] flex flex-col shadow-2xl overflow-hidden select-text">
+              {/* Pinned Header */}
+              <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white/95 dark:bg-slate-900/95">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-2xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+                    <Layers className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-display">
+                      {isNewWhatIDo ? 'Add Service Card' : 'Edit Service Card'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure service offering titles, iconic representations, and value proposition
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingWhatIDo(null)}
+                  className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  <option value="terminal">terminal (Terminal / CLI)</option>
-                  <option value="palette">palette (UI / UX / Design)</option>
-                  <option value="rocket">rocket (Performance / Optimization)</option>
-                  <option value="cpu">cpu (Systems / Hardware / GPU)</option>
-                  <option value="code">code (Clean Architecture)</option>
-                  <option value="shield">shield (Security & Auditing)</option>
-                  <option value="database">database (Data & Storage)</option>
-                  <option value="layers">layers (Micro-frontends)</option>
-                  <option value="globe">globe (Global Edge / CDN)</option>
-                </select>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
-                  Detailed Service Description
-                </label>
-                <textarea
-                  rows={4}
-                  value={editingWhatIDo.description}
-                  onChange={(e) => setEditingWhatIDo({ ...editingWhatIDo, description: e.target.value })}
-                  placeholder="Describe your capabilities, technologies used, and client value proposition."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
+              {/* Scrollable Form Body */}
+              <div className="p-6 sm:p-8 space-y-5 overflow-y-auto overscroll-contain flex-1">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Service Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editingWhatIDo.title}
+                    onChange={(e) => setEditingWhatIDo({ ...editingWhatIDo, title: e.target.value })}
+                    placeholder="e.g. Distributed Systems Architecture & Micro-Frontends"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Icon Identifier
+                  </label>
+                  <select
+                    value={editingWhatIDo.icon}
+                    onChange={(e) => setEditingWhatIDo({ ...editingWhatIDo, icon: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all cursor-pointer"
+                  >
+                    <option value="terminal">terminal (Terminal / CLI / Distributed Runtimes)</option>
+                    <option value="palette">palette (UI / UX / Dynamic Design Systems)</option>
+                    <option value="rocket">rocket (Performance / Ultra Low-Latency Optimization)</option>
+                    <option value="cpu">cpu (Systems Architecture / Cloud & Infrastructure)</option>
+                    <option value="code">code (Clean Architecture & Polyglot Development)</option>
+                    <option value="shield">shield (Security, Auditing & Resilience)</option>
+                    <option value="database">database (Relational Databases & Real-time State)</option>
+                    <option value="layers">layers (Micro-frontends & Distributed Components)</option>
+                    <option value="globe">globe (Global Edge Networks & CDN Infrastructure)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Detailed Service Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editingWhatIDo.description}
+                    onChange={(e) => setEditingWhatIDo({ ...editingWhatIDo, description: e.target.value })}
+                    placeholder="Describe your capabilities, technologies used, and client value proposition in detail."
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {/* Pinned Action Footer */}
+              <div className="flex justify-end gap-3 px-6 sm:px-8 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingWhatIDo(null)}
+                  className="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveWhatIDoModal}
+                  className="px-7 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold shadow-md shadow-sky-600/25 transition-all cursor-pointer"
+                >
+                  Save Service Card
+                </button>
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setEditingWhatIDo(null)}
-                className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveWhatIDoModal}
-                className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
-              >
-                Save Service Card
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
+          </div>,
+          document.body
+        )}
 
       {/* EXPERIENCE MODAL (KEPT SAME AS REQUESTED) */}
-      {editingExp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 md:p-8 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">
-                  {isNewExp ? 'Add Career Role' : 'Edit Career Experience'}
-                </h3>
+      {editingExp &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setEditingExp(null);
+            }}
+            onWheel={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-150 overscroll-contain select-none"
+          >
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl h-auto max-h-[85vh] flex flex-col shadow-2xl overflow-hidden select-text">
+              {/* Pinned Header */}
+              <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white/95 dark:bg-slate-900/95">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-2xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-xs">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-display">
+                      {isNewExp ? 'Add Career Role' : 'Edit Career Experience'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure corporate or freelance role tenure, organization details, and technology stack
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingExp(null)}
+                  className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setEditingExp(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Role Title</label>
-                <input
-                  type="text"
-                  value={editingExp.role}
-                  onChange={(e) => setEditingExp({ ...editingExp, role: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Scrollable Form Body */}
+              <div className="p-6 sm:p-8 space-y-5 overflow-y-auto overscroll-contain flex-1">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Company / Organization</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Role Title
+                  </label>
                   <input
                     type="text"
-                    value={editingExp.company}
-                    onChange={(e) => setEditingExp({ ...editingExp, company: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                    value={editingExp.role}
+                    onChange={(e) => setEditingExp({ ...editingExp, role: e.target.value })}
+                    placeholder="e.g. Lead Systems Architect & Senior Frontend Engineer"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all font-medium"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Company / Organization
+                    </label>
+                    <input
+                      type="text"
+                      value={editingExp.company}
+                      onChange={(e) => setEditingExp({ ...editingExp, company: e.target.value })}
+                      placeholder="e.g. Global Distributed Systems Lab"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Period (e.g. 2022 - PRESENT)
+                    </label>
+                    <input
+                      type="text"
+                      value={editingExp.period}
+                      onChange={(e) => setEditingExp({ ...editingExp, period: e.target.value })}
+                      placeholder="e.g. 2022 - PRESENT"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Period (e.g. 2022 - PRESENT)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Role Description & Key Accomplishments
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editingExp.description}
+                    onChange={(e) => setEditingExp({ ...editingExp, description: e.target.value })}
+                    placeholder="Architecting end-to-end distributed systems, mentoring engineering squads, and reducing query latency."
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                    Technologies & Tooling (comma-separated)
+                  </label>
                   <input
                     type="text"
-                    value={editingExp.period}
-                    onChange={(e) => setEditingExp({ ...editingExp, period: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
+                    value={editingExp.technologies.join(', ')}
+                    onChange={(e) =>
+                      setEditingExp({
+                        ...editingExp,
+                        technologies: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
+                      })
+                    }
+                    placeholder="React 19, Next.js 15, TypeScript, Tailwind CSS, Frappe Framework, MariaDB"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Role Description</label>
-                <textarea
-                  rows={3}
-                  value={editingExp.description}
-                  onChange={(e) => setEditingExp({ ...editingExp, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Technologies (comma-separated)</label>
-                <input
-                  type="text"
-                  value={editingExp.technologies.join(', ')}
-                  onChange={(e) =>
-                    setEditingExp({
-                      ...editingExp,
-                      technologies: e.target.value.split(',').map((t) => t.trim()).filter(Boolean),
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100"
-                />
+              {/* Pinned Action Footer */}
+              <div className="flex justify-end gap-3 px-6 sm:px-8 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingExp(null)}
+                  className="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveExpModal}
+                  className="px-7 py-2.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold shadow-md shadow-sky-600/25 transition-all cursor-pointer"
+                >
+                  Save Experience
+                </button>
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setEditingExp(null)}
-                className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveExpModal}
-                className="px-6 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 cursor-pointer"
-              >
-                Save Experience
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* SMART JSON VAULT IMPORTER MODAL */}
       {jsonModalOpen &&
@@ -4303,6 +4733,12 @@ export function AdminDashboard() {
               if (e.target === e.currentTarget) {
                 if (jsonModalFullscreen) setJsonModalFullscreen(false);
                 else setJsonModalOpen(false);
+              }
+            }}
+            onWheel={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                e.stopPropagation();
               }
             }}
             className={`fixed inset-0 z-[9999] flex items-center justify-center ${

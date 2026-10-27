@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   Terminal,
@@ -16,7 +17,10 @@ import {
   Code2,
   Link2
 } from 'lucide-react';
+import { motion } from 'motion/react';
+import { usePathname } from 'next/navigation';
 import { usePortfolioData } from '@/components/PortfolioDataContext';
+import { triggerNavAnimation } from './PageTransition';
 
 function DynamicSocialIcon({ icon, className }: { icon?: string; className?: string }) {
   const norm = (icon || '').toLowerCase();
@@ -32,6 +36,23 @@ function DynamicSocialIcon({ icon, className }: { icon?: string; className?: str
 }
 
 export function Footer() {
+  const pathname = usePathname();
+  const [showFloatingScroll, setShowFloatingScroll] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const handleScroll = () => {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      setShowFloatingScroll(scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (pathname === '/resume' || pathname.startsWith('/admin')) return null;
+
   const { data } = usePortfolioData();
   const developerProfile = data.profile;
   const scrollToTop = () => {
@@ -47,7 +68,7 @@ export function Footer() {
       ];
 
   return (
-    <footer className="w-full border-t border-sky-100 dark:border-slate-800 bg-white/70 dark:bg-slate-950/80 backdrop-blur-md py-12 transition-colors mt-auto">
+    <footer className="w-full border-t border-sky-100 dark:border-slate-800 bg-white/70 dark:bg-slate-950/80 backdrop-blur-md py-12 transition-colors mt-auto print:hidden">
       <div className="max-w-[1240px] mx-auto px-4 md:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-sky-100/80 dark:border-slate-800/80">
           <div className="flex items-center gap-3">
@@ -73,7 +94,7 @@ export function Footer() {
                 rel="noreferrer"
                 aria-label={link.platform}
                 title={link.platform}
-                className="size-10 rounded-full border border-sky-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-sky-600 hover:text-white dark:hover:bg-sky-600 hover:border-sky-600 transition-all hover:-translate-y-0.5 shadow-sm"
+                className="size-10 rounded-full border border-sky-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-sky-600 hover:text-white dark:hover:bg-sky-600 hover:border-sky-600 transition-all click-bounce hover:-translate-y-0.5 shadow-sm"
               >
                 <DynamicSocialIcon icon={link.icon} className="w-4 h-4" />
               </a>
@@ -81,7 +102,7 @@ export function Footer() {
             <button
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="size-10 rounded-full border border-sky-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors shadow-sm ml-2"
+              className="size-10 rounded-full border border-sky-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900 text-slate-700 dark:text-slate-300 flex items-center justify-center hover:bg-sky-50 dark:hover:bg-slate-800 transition-colors shadow-sm ml-2 click-bounce cursor-pointer"
               title="Back to top"
             >
               <ArrowUp className="w-4 h-4" />
@@ -96,18 +117,65 @@ export function Footer() {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Operational Telemetry Online
             </span>
-            <Link href="/about" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+            <Link
+              href="/about"
+              onClick={() => triggerNavAnimation()}
+              className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors click-bounce"
+            >
               About
             </Link>
-            <Link href="/projects" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+            <Link
+              href="/projects"
+              onClick={() => triggerNavAnimation()}
+              className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors click-bounce"
+            >
               Projects
             </Link>
-            <Link href="/contact" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+            <Link
+              href="/contact"
+              onClick={() => triggerNavAnimation()}
+              className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors click-bounce"
+            >
               Contact
             </Link>
           </div>
         </div>
       </div>
+
+      {/* Floating Animated Scroll to Top Button for Main Portfolio Pages (Portaled directly to document.body) */}
+      {mounted &&
+        createPortal(
+          <div
+            className={`print:hidden fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 flex items-center select-none transition-all duration-300 ${
+              showFloatingScroll
+                ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+                : 'opacity-0 translate-y-4 scale-90 pointer-events-none'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="size-12 rounded-full bg-white/95 dark:bg-slate-900/95 text-sky-600 dark:text-sky-400 shadow-2xl shadow-sky-900/20 dark:shadow-sky-500/20 border-2 border-slate-200 dark:border-slate-700/80 hover:scale-110 active:scale-95 transition-transform flex items-center justify-center cursor-pointer group click-bounce backdrop-blur-md"
+              title="Scroll back to top"
+              aria-label="Scroll back to top"
+            >
+              <motion.div
+                animate={{
+                  y: [0, -4, 0],
+                }}
+                transition={{
+                  duration: 1.6,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+                className="flex items-center justify-center"
+              >
+                <ArrowUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+              </motion.div>
+            </button>
+          </div>,
+          document.body
+        )}
     </footer>
   );
 }

@@ -5,17 +5,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Terminal, Sparkles } from 'lucide-react';
 
 export function PageLoader() {
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return !sessionStorage.getItem('spv_vault_loaded');
-    } catch {
-      return false;
-    }
-  });
-
+  const [loading, setLoading] = useState<boolean>(false);
   const [progress, setProgress] = useState(12);
   const [statusText, setStatusText] = useState('CONNECTING TO NODE...');
+
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem('spv_vault_loaded')) {
+        setLoading(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading) return;
