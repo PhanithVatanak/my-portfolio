@@ -141,6 +141,7 @@ export interface DeveloperProfile {
   role: string;
   location: string;
   email: string;
+  phone?: string;
   isAvailableForHire: boolean;
   avatarUrl: string;
   tagline: string;
@@ -148,6 +149,10 @@ export interface DeveloperProfile {
   heroSubtitle: string;
   heroDescription: string;
   longDescription: string;
+  resumeHeadline?: string;
+  resumeSubheadline?: string;
+  resumeSummaryTitle?: string;
+  resumeSummary?: string;
   socials: {
     github: string;
     linkedin: string;

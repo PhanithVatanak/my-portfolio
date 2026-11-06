@@ -98,7 +98,15 @@ export function PortfolioDataProvider({ children }: { children: React.ReactNode 
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
-          setData(normalizeDataSlugs({ ...defaultPortfolioData, ...parsed }));
+          setData(
+            normalizeDataSlugs({
+              ...defaultPortfolioData,
+              ...parsed,
+              profile: parsed.profile
+                ? { ...defaultPortfolioData.profile, ...parsed.profile }
+                : defaultPortfolioData.profile,
+            })
+          );
         }
       }
     } catch {

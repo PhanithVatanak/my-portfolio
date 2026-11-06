@@ -1717,7 +1717,7 @@ export function AdminDashboard() {
   const pageNavItems = useMemo(
     () => [
       { id: 'home' as AdminTab, label: 'Home Page', subtitle: 'Hero, Stats & Services', icon: Home, badge: null, previewHref: '/#hero' },
-      { id: 'about' as AdminTab, label: 'About Page', subtitle: 'Bio, Roles, Edu & Languages', icon: User, badge: null, previewHref: '/#about' },
+      { id: 'about' as AdminTab, label: 'About & Resume', subtitle: 'Bio, CV Summary, Roles & Edu', icon: User, badge: null, previewHref: '/resume' },
       { id: 'projects' as AdminTab, label: 'Project Page', subtitle: 'Portfolio Showcase Vault', icon: FolderGit2, badge: data.projects.length.toString(), previewHref: '/projects' },
       { id: 'articles' as AdminTab, label: 'Blog Page', subtitle: 'Articles & Field Notes CMS', icon: FileCode, badge: data.articles.length.toString(), previewHref: '/blog' },
       { id: 'contact' as AdminTab, label: 'Contact Page', subtitle: 'Channels, Socials & Inbox', icon: Mail, badge: unreadInquiriesCount > 0 ? `${unreadInquiriesCount} new` : null, previewHref: '/contact' },
@@ -2610,6 +2610,113 @@ export function AdminDashboard() {
                         onChange={(e) => setProfileOverrides((prev) => ({ ...prev, heroDescription: e.target.value }))}
                         className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 font-body leading-relaxed"
                         placeholder="Comprehensive developer bio, engineering philosophy, and domain focus..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resume / CV Dossier Header & Executive Summary (/resume) */}
+                <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                        <span>Resume / CV Dossier Header & Executive Summary (/resume)</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Directly controls the role headline, specialization subheadline, and Executive Profile & Architecture Summary displayed on <code className="font-mono text-sky-600 dark:text-sky-400">/resume</code>.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href="/resume"
+                        target="_blank"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Preview /resume</span>
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveProfileAndLinks()}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Save Resume Text</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                        Resume Role & Title Line
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          profileForm.resumeHeadline ??
+                          `${profileForm.role || 'Web Application Developer'} • Systems Architect`
+                        }
+                        onChange={(e) =>
+                          setProfileOverrides((prev) => ({ ...prev, resumeHeadline: e.target.value }))
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100"
+                        placeholder="Web Application Developer • Systems Architect"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                        Executive Summary Section Heading
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          profileForm.resumeSummaryTitle ?? 'Executive Profile & Architecture Summary'
+                        }
+                        onChange={(e) =>
+                          setProfileOverrides((prev) => ({ ...prev, resumeSummaryTitle: e.target.value }))
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100"
+                        placeholder="Executive Profile & Architecture Summary"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                        Resume Header Specialization Description (Under Role)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={
+                          profileForm.resumeSubheadline ??
+                          'Full-Stack Web Application Developer specializing in Next.js 15, TypeScript, Frappe Framework, Python, and scalable distributed enterprise applications.'
+                        }
+                        onChange={(e) =>
+                          setProfileOverrides((prev) => ({ ...prev, resumeSubheadline: e.target.value }))
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 font-body leading-relaxed"
+                        placeholder="Full-Stack Web Application Developer specializing in Next.js 15, TypeScript, Frappe Framework, Python, and scalable distributed enterprise applications."
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                        Executive Profile & Architecture Summary Paragraph
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={
+                          profileForm.resumeSummary ??
+                          'Senior Systems Architect & Full-Stack Engineer with 6+ years of practical tenure building, deploying, and maintaining production business platforms, high-throughput recruitment management systems (RMS), enterprise HRMS, and modern web applications. Specialized in Next.js 15, TypeScript, Frappe Framework, Python, MariaDB, and vector database workflows. Proven track record delivering responsive web interfaces, optimizing SQL pipelines, and maintaining mission-critical business software.'
+                        }
+                        onChange={(e) =>
+                          setProfileOverrides((prev) => ({ ...prev, resumeSummary: e.target.value }))
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 font-body leading-relaxed"
+                        placeholder="Senior Systems Architect & Full-Stack Engineer with 6+ years of practical tenure..."
                       />
                     </div>
                   </div>

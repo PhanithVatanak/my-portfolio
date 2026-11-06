@@ -15,6 +15,10 @@ export const developerProfile = {
   heroSubtitle: "Web Developer based in Phnom Penh",
   heroDescription: "I build accessible, pixel-perfect web experiences using Next.js and TypeScript. With a passion for clean code and user-centric design, I turn complex problems into simple, beautiful interfaces.",
   longDescription: "Senior Systems Architect & Full-Stack Engineer engineering resilient distributed infrastructure, real-time telemetry, and technical web interfaces.",
+  resumeHeadline: "Web Application Developer • Systems Architect",
+  resumeSubheadline: "Full-Stack Web Application Developer specializing in Next.js 15, TypeScript, Frappe Framework, Python, and scalable distributed enterprise applications.",
+  resumeSummaryTitle: "Executive Profile & Architecture Summary",
+  resumeSummary: "Senior Systems Architect & Full-Stack Engineer with 6+ years of practical tenure building, deploying, and maintaining production business platforms, high-throughput recruitment management systems (RMS), enterprise HRMS, and modern web applications. Specialized in Next.js 15, TypeScript, Frappe Framework, Python, MariaDB, and vector database workflows. Proven track record delivering responsive web interfaces, optimizing SQL pipelines, and maintaining mission-critical business software.",
   socials: {
     github: 'https://github.com',
     linkedin: 'https://linkedin.com',

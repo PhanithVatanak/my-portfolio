@@ -77,11 +77,12 @@ export function ResumeContent({
                 </h1>
 
                 <p className="text-sky-700 font-extrabold text-sm sm:text-base tracking-wide font-display">
-                  {developerProfile.role} • Systems Architect
+                  {developerProfile.resumeHeadline || `${developerProfile.role} • Systems Architect`}
                 </p>
 
                 <p className="text-slate-600 text-xs sm:text-[13px] max-w-xl leading-relaxed pt-0.5">
-                  Full-Stack Web Application Developer specializing in Next.js 15, TypeScript, Frappe Framework, Python, and scalable distributed enterprise applications.
+                  {developerProfile.resumeSubheadline ||
+                    'Full-Stack Web Application Developer specializing in Next.js 15, TypeScript, Frappe Framework, Python, and scalable distributed enterprise applications.'}
                 </p>
               </div>
             </div>
@@ -167,10 +168,11 @@ export function ResumeContent({
         <section className="space-y-2 print-break-inside-avoid">
           <div className="flex items-center gap-2 text-xs font-mono font-bold tracking-wider text-sky-800 uppercase border-b border-sky-100 pb-1">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Executive Profile & Architecture Summary</span>
+            <span>{developerProfile.resumeSummaryTitle || 'Executive Profile & Architecture Summary'}</span>
           </div>
           <p className="text-slate-700 leading-relaxed text-xs sm:text-sm">
-            Senior Systems Architect & Full-Stack Engineer with 6+ years of practical tenure building, deploying, and maintaining production business platforms, high-throughput recruitment management systems (RMS), enterprise HRMS, and modern web applications. Specialized in Next.js 15, TypeScript, Frappe Framework, Python, MariaDB, and vector database workflows. Proven track record delivering responsive web interfaces, optimizing SQL pipelines, and maintaining mission-critical business software.
+            {developerProfile.resumeSummary ||
+              'Senior Systems Architect & Full-Stack Engineer with 6+ years of practical tenure building, deploying, and maintaining production business platforms, high-throughput recruitment management systems (RMS), enterprise HRMS, and modern web applications. Specialized in Next.js 15, TypeScript, Frappe Framework, Python, MariaDB, and vector database workflows. Proven track record delivering responsive web interfaces, optimizing SQL pipelines, and maintaining mission-critical business software.'}
           </p>
         </section>
 
