@@ -82,7 +82,8 @@ import {
   WhatIDoItem,
   DeveloperProfile,
   SocialLinkItem,
-  TechRadarItem
+  TechRadarItem,
+  SkillCategory
 } from '@/lib/types';
 import { initialTechRadar } from '@/lib/data';
 import { BlogDetailsView } from './BlogDetailsView';
@@ -355,6 +356,7 @@ export function AdminDashboard() {
     updateExperiences,
     updateEducation,
     updateLanguages,
+    updateSkills,
     updateTechRadar,
     updateArticles,
     resetToDefaults,
@@ -550,10 +552,14 @@ export function AdminDashboard() {
       socialLinks: socialLinksList,
     };
 
-    const ok = await updateProfile(finalProfile);
+    const ok = await saveData({
+      profile: finalProfile,
+      ...(skillsOverrides ? { skills: skillsOverrides } : {}),
+    });
     if (ok) {
       setProfileOverrides({});
       setSocialLinksOverrides(null);
+      setSkillsOverrides(null);
       showToast('Page configuration saved & synced across whole site!', 'success');
     } else {
       showToast('Failed to save configuration.', 'error');
@@ -872,6 +878,93 @@ export function AdminDashboard() {
     setEducationOverrides(null);
     setLanguagesOverrides(null);
     showToast('Education & Languages synced to live JSON!', 'success');
+  };
+
+  // Core Technical Skills (/resume) State & Handlers
+  const [skillsOverrides, setSkillsOverrides] = useState<SkillCategory[] | null>(null);
+  const skillsListState = skillsOverrides ?? data.skills;
+  const [newSkillInputs, setNewSkillInputs] = useState<Record<number, string>>({});
+
+  const handleAddSkillCategory = async () => {
+    if (!requireAdmin('Adding skill category')) return;
+    const newCat: SkillCategory = {
+      title: 'New Skill Category',
+      icon: 'code',
+      skills: ['New Skill'],
+    };
+    const updated = [...skillsListState, newCat];
+    setSkillsOverrides(updated);
+    if (updateSkills) await updateSkills(updated);
+    showToast('New skill category added!', 'success');
+  };
+
+  const handleUpdateSkillCategoryTitle = (catIndex: number, title: string) => {
+    const updated = skillsListState.map((cat, idx) =>
+      idx === catIndex ? { ...cat, title } : cat
+    );
+    setSkillsOverrides(updated);
+  };
+
+  const handleDeleteSkillCategory = async (catIndex: number) => {
+    if (!requireAdmin('Deleting skill category')) return;
+    const updated = skillsListState.filter((_, idx) => idx !== catIndex);
+    setSkillsOverrides(updated);
+    if (updateSkills) await updateSkills(updated);
+    showToast('Skill category removed.', 'info');
+  };
+
+  const handleMoveSkillCategory = async (catIndex: number, dir: 'up' | 'down') => {
+    if (!requireAdmin('Reordering skill categories')) return;
+    const target = dir === 'up' ? catIndex - 1 : catIndex + 1;
+    if (target < 0 || target >= skillsListState.length) return;
+    const updated = [...skillsListState];
+    const temp = updated[catIndex];
+    updated[catIndex] = updated[target];
+    updated[target] = temp;
+    setSkillsOverrides(updated);
+    if (updateSkills) await updateSkills(updated);
+  };
+
+  const handleAddSkillToCategory = async (catIndex: number) => {
+    if (!requireAdmin('Adding skill')) return;
+    const raw = (newSkillInputs[catIndex] || '').trim();
+    if (!raw) return;
+    // Allow comma-separated additions as well as single skill
+    const toAdd = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (toAdd.length === 0) return;
+
+    const updated = skillsListState.map((cat, idx) =>
+      idx === catIndex
+        ? { ...cat, skills: [...cat.skills, ...toAdd] }
+        : cat
+    );
+    setSkillsOverrides(updated);
+    setNewSkillInputs((prev) => ({ ...prev, [catIndex]: '' }));
+    if (updateSkills) await updateSkills(updated);
+    showToast(`Added ${toAdd.join(', ')} to "${skillsListState[catIndex].title}"!`, 'success');
+  };
+
+  const handleRemoveSkillFromCategory = async (catIndex: number, skillIndex: number) => {
+    if (!requireAdmin('Removing skill')) return;
+    const updated = skillsListState.map((cat, idx) =>
+      idx === catIndex
+        ? { ...cat, skills: cat.skills.filter((_, sIdx) => sIdx !== skillIndex) }
+        : cat
+    );
+    setSkillsOverrides(updated);
+    if (updateSkills) await updateSkills(updated);
+  };
+
+  const handleSaveSkills = async () => {
+    if (!requireAdmin('Saving Core Technical Skills')) return;
+    if (updateSkills) {
+      await updateSkills(skillsListState);
+    }
+    setSkillsOverrides(null);
+    showToast('Core Technical Skills saved & synced to /resume!', 'success');
   };
 
   // Tech Radar / Battle-Tested Tooling State (Editable & Synced to Turso Relational DB)
@@ -2719,6 +2812,140 @@ export function AdminDashboard() {
                         placeholder="Senior Systems Architect & Full-Stack Engineer with 6+ years of practical tenure..."
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Core Technical Skills (/resume) */}
+                <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-2">
+                        <Award className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                        <span>Core Technical Skills (/resume)</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Manage skill categories (e.g., Languages &amp; Core, Frameworks &amp; Libraries, Tools &amp; Platforms, Soft Skills) and add or remove skill badges shown on <code className="font-mono text-sky-600 dark:text-sky-400">/resume</code>.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleAddSkillCategory}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Skill Category</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveSkills}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Save Core Skills</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {skillsListState.map((cat, catIdx) => (
+                      <div
+                        key={catIdx}
+                        className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3.5 flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          {/* Category Title & Controls */}
+                          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/70 dark:border-slate-800">
+                            <input
+                              type="text"
+                              value={cat.title}
+                              onChange={(e) => handleUpdateSkillCategoryTitle(catIdx, e.target.value)}
+                              onBlur={handleSaveSkills}
+                              placeholder="Category Title (e.g. Languages & Core)"
+                              className="font-bold text-sm text-slate-900 dark:text-white bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-sky-500 focus:outline-none w-full"
+                            />
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveSkillCategory(catIdx, 'up')}
+                                disabled={catIdx === 0}
+                                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
+                                title="Move Category Up"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveSkillCategory(catIdx, 'down')}
+                                disabled={catIdx === skillsListState.length - 1}
+                                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 rounded cursor-pointer"
+                                title="Move Category Down"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSkillCategory(catIdx)}
+                                className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                title="Delete Category"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Existing Skill Badges */}
+                          <div className="flex flex-wrap gap-1.5 min-h-[34px]">
+                            {cat.skills.map((skill, sIdx) => (
+                              <span
+                                key={sIdx}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs"
+                              >
+                                <span>{skill}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSkillFromCategory(catIdx, sIdx)}
+                                  className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                  title={`Remove "${skill}"`}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                            {cat.skills.length === 0 && (
+                              <span className="text-xs text-slate-400 italic">No skills in this category yet.</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Add New Skill Input */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                          <input
+                            type="text"
+                            value={newSkillInputs[catIdx] || ''}
+                            onChange={(e) =>
+                              setNewSkillInputs((prev) => ({ ...prev, [catIdx]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddSkillToCategory(catIdx);
+                              }
+                            }}
+                            placeholder="Add skill (e.g. Python, Frappe)..."
+                            className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddSkillToCategory(catIdx)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-all cursor-pointer shrink-0"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
